@@ -1,0 +1,123 @@
+"""Dependency-free HTTP helpers for the Sentry and GitHub signal paths."""
+
+from __future__ import annotations
+
+import json
+import os
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+
+STATUSES = {"ok", "degraded", "unavailable"}
+
+
+def redact(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: "[REDACTED]" if any(token in key.lower() for token in ("token", "secret", "authorization", "password")) else redact(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact(item) for item in value]
+    return value
+
+
+def iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def windows(now: datetime | None = None) -> tuple[datetime, datetime, datetime]:
+    end = now or datetime.now(timezone.utc)
+    return end - timedelta(hours=48), end - timedelta(hours=24), end
+
+
+def sentry_count(items: list[dict[str, Any]]) -> int:
+    return sum(int(item.get("count", 0) or 0) for item in items)
+
+
+def error_result(signal: str, project: str, error_type: str, message: str, duration_ms: int = 0) -> dict[str, Any]:
+    return {
+        "signal": signal,
+        "project": project,
+        "status": "unavailable",
+        "observed_at": iso_now(),
+        "duration_ms": duration_ms,
+        "summary": f"{signal} unavailable: {message}",
+        "metrics": {},
+        "errors": [{"type": error_type, "message": message}],
+        "evidence": "",
+    }
+
+
+def fetch_json(url: str, token: str, *, method: str = "GET", body: dict[str, Any] | None = None, timeout: int = 60) -> Any:
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+    data = json.dumps(body).encode() if body is not None else None
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    request = Request(url, data=data, headers=headers, method=method)
+    with urlopen(request, timeout=timeout) as response:
+        payload = response.read()
+        return json.loads(payload.decode()) if payload else {}
+
+
+def fetch_sentry(project_name: str, config: dict[str, Any], timeout: int = 60) -> dict[str, Any]:
+    started = time.monotonic()
+    token = os.getenv(config.get("token_env", "SENTRY_AUTH_TOKEN"))
+    if not token:
+        return error_result("sentry", project_name, "missing_credential", config.get("token_env", "SENTRY_AUTH_TOKEN"))
+    base = config.get("base_url", "https://sentry.io").rstrip("/")
+    organization = config["organization"]
+    project = config["project"]
+    baseline_start, current_start, end = windows()
+    try:
+        def count(start: datetime, finish: datetime) -> int:
+            query = urlencode({"project": project, "start": start.isoformat(), "end": finish.isoformat(), "limit": 100})
+            data = fetch_json(f"{base}/api/0/organizations/{organization}/issues/?{query}", token, timeout=timeout)
+            return sentry_count(data if isinstance(data, list) else data.get("issues", []))
+
+        baseline = count(baseline_start, current_start)
+        current = count(current_start, end)
+        metrics: dict[str, Any] = {
+            "current_24h": current,
+            "baseline_24h": baseline,
+            "delta": current - baseline,
+            "windows": {"current": [current_start.isoformat(), end.isoformat()], "baseline": [baseline_start.isoformat(), current_start.isoformat()]},
+        }
+        if baseline:
+            metrics["delta_percent"] = round((current - baseline) / baseline * 100, 2)
+        return {"signal": "sentry", "project": project_name, "status": "ok", "observed_at": iso_now(), "duration_ms": round((time.monotonic() - started) * 1000), "summary": f"{current} errors in the last 24h; delta {current - baseline}", "metrics": metrics, "errors": [], "evidence": ""}
+    except (HTTPError, URLError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        return error_result("sentry", project_name, type(exc).__name__, str(exc), round((time.monotonic() - started) * 1000))
+
+
+def fetch_tracking_patrol(project_name: str, config: dict[str, Any], mode: str = "read_latest", timeout: int = 60) -> dict[str, Any]:
+    started = time.monotonic()
+    token = os.getenv(config.get("token_env", "GITHUB_TOKEN"))
+    if not token:
+        return error_result("tracking_patrol", project_name, "missing_credential", config.get("token_env", "GITHUB_TOKEN"))
+    owner, repo, workflow = config["owner"], config["repository"], config["workflow"]
+    try:
+        if mode == "trigger":
+            ref = config.get("ref", "main")
+            fetch_json(f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow}/dispatches", token, method="POST", body={"ref": ref}, timeout=timeout)
+        query = urlencode({"event": "workflow_dispatch"}) if mode == "trigger" else ""
+        runs = fetch_json(f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow}/runs?per_page=1&{query}", token, timeout=timeout)
+        latest = (runs.get("workflow_runs") or [{}])[0]
+        if not latest:
+            return error_result("tracking_patrol", project_name, "empty_response", "GitHub returned no workflow runs")
+        conclusion = latest.get("conclusion") or "in_progress"
+        status = "ok" if conclusion == "success" else "degraded" if conclusion in {"in_progress", "queued"} else "degraded"
+        return {"signal": "tracking_patrol", "project": project_name, "status": status, "observed_at": iso_now(), "duration_ms": round((time.monotonic() - started) * 1000), "summary": f"latest patrol run: {conclusion}", "metrics": {"run_id": latest.get("id"), "conclusion": conclusion, "html_url": latest.get("html_url")}, "errors": [], "evidence": ""}
+    except (HTTPError, URLError, KeyError, ValueError, json.JSONDecodeError) as exc:
+        return error_result("tracking_patrol", project_name, type(exc).__name__, str(exc), round((time.monotonic() - started) * 1000))
+
+
+def write_evidence(path: str | Path, result: dict[str, Any]) -> None:
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(redact(result), indent=2, sort_keys=True) + "\n", encoding="utf-8")

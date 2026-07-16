@@ -1,0 +1,11 @@
+version: 1
+defaults:
+  timeout_seconds: 60
+  severity: P1
+  datadog:
+    error_rate_percent: null
+    p95_ms: null
+  sentry:
+    error_delta: null
+projects: {}
+

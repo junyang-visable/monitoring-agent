@@ -1,0 +1,32 @@
+version: 1
+defaults:
+  enabled: true
+  timeout_seconds: 60
+  timezone: UTC
+  tracking_patrol:
+    mode: read_latest
+
+# Add one entry per monitored project. Keep secrets in environment variables.
+projects:
+  search-frontend:
+    enabled: true
+    service: search-frontend
+    environment: production
+    datadog:
+      enabled: true
+      query: "<configure Datadog query>"
+    stability_sdk:
+      enabled: true
+      date_range: rolling_24h
+    sentry:
+      enabled: true
+      organization: "<configure Sentry organization>"
+      project: "<configure Sentry project>"
+      base_url: "https://sentry.io"
+      token_env: SENTRY_AUTH_TOKEN
+    tracking_patrol:
+      enabled: true
+      owner: "<configure GitHub owner>"
+      repository: "<configure tracking_patrol repository>"
+      workflow: "<configure workflow file or id>"
+      token_env: GITHUB_TOKEN

@@ -1,6 +1,6 @@
 # Monitoring Agent Skill
 
-Orchestrate real monitoring capabilities for every enabled project in `monitoring-agent/config/monitoring_config.yaml`.
+Orchestrate real monitoring capabilities for every enabled project in `monitoring-orchestrator/config/monitoring_config.yaml`.
 
 ## Required sequence
 
@@ -20,13 +20,13 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 - Sentry → call the Sentry REST API using the configured organization, project, and time windows.
 - tracking_patrol → read the latest GitHub Actions run by default; dispatch a new run only when mode is `trigger` or a manual override requests it.
 
-The Sentry and GitHub HTTP implementations are in `monitoring-agent/runtime.py`. They use only the Python standard library and environment-provided tokens. The Datadog and Stability SDK calls remain capability invocations performed by the agent runtime.
+The Sentry and GitHub HTTP implementations are in `monitoring-orchestrator/runtime.py`. They use only the Python standard library and environment-provided tokens. The Datadog and Stability SDK calls remain capability invocations performed by the agent runtime.
 
 Do not replace any real call with sample data. If a capability cannot be invoked in the current runtime, record that fact as an unavailable result.
 
 ## Output
 
-- Markdown template → `monitoring-agent/templates/monitoring_report.md.tpl`
-- Thresholds → `monitoring-agent/config/thresholds.yaml`
+- Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
+- Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
 - Evidence → `artifacts/monitoring/<timestamp>/<project>/<signal>.json`
 - Reports → `artifacts/monitoring/<timestamp>/monitoring_report_<timestamp>.md` and `.json`

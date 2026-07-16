@@ -26,11 +26,11 @@ flowchart LR
 | File | Role |
 |------|------|
 | `.agents/monitoring-agent.md` | Thin Subagent entry and no-fabrication contract |
-| `monitoring-agent/SKILL.md` | Orchestration sequence and capability whitelist |
-| `monitoring-agent/runtime.py` | Real Sentry and GitHub Actions HTTP adapters |
-| `monitoring-agent/config/monitoring_config.yaml` | Multi-project non-secret Skill configuration |
-| `monitoring-agent/references/contracts.md` | Normalized signal envelope |
-| `monitoring-agent/templates/monitoring_report.md.tpl` | Four-signal report layout |
+| `monitoring-orchestrator/SKILL.md` | Orchestration sequence and capability whitelist |
+| `monitoring-orchestrator/runtime.py` | Real Sentry and GitHub Actions HTTP adapters |
+| `monitoring-orchestrator/config/monitoring_config.yaml` | Multi-project non-secret Skill configuration |
+| `monitoring-orchestrator/references/contracts.md` | Normalized signal envelope |
+| `monitoring-orchestrator/templates/monitoring_report.md.tpl` | Four-signal report layout |
 
 ## Implementation Notes
 

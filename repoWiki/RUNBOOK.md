@@ -1,11 +1,11 @@
-# monitoring-agent - Runbook
+# monitoring-orchestrator - Runbook
 
 <!-- metadata
 generated: 2026-07-16
 last_synced: 2026-07-16
 -->
 
-Agent-optimized knowledge base for monitoring-agent.
+Agent-optimized knowledge base for monitoring-orchestrator.
 
 ## Quick Links
 

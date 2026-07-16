@@ -25,7 +25,7 @@ flowchart LR
 
 | File | Role |
 |------|------|
-| `.cursor/agents/monitoring-agent.md` | Thin Subagent entry and no-fabrication contract |
+| `.agents/monitoring-agent.md` | Thin Subagent entry and no-fabrication contract |
 | `monitoring-agent/SKILL.md` | Orchestration sequence and capability whitelist |
 | `monitoring-agent/runtime.py` | Real Sentry and GitHub Actions HTTP adapters |
 | `monitoring-agent/config/monitoring_config.yaml` | Multi-project non-secret Skill configuration |

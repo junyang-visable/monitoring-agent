@@ -6,7 +6,7 @@ Configuration-driven monitoring agent for collecting signals from multiple proje
 
 1. Configure projects in `monitoring-agent/config/monitoring_config.yaml`.
 2. Put service tokens in environment variables referenced by the config.
-3. Invoke `.cursor/agents/monitoring-agent.md` or load `monitoring-agent/SKILL.md`.
+3. Invoke `.agents/monitoring-agent.md` or load `monitoring-agent/SKILL.md`.
 4. Inspect reports and redacted evidence under `artifacts/monitoring/`.
 
 The agent performs real calls only. Missing credentials, permissions, empty responses, and timeouts are reported as degraded or unavailable; no synthetic metrics are generated.

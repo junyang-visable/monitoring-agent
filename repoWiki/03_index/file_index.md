@@ -1,7 +1,7 @@
 # File Index
 
 - `README.md` → placeholder project documentation.
-- `.cursor/agents/monitoring-agent.md` → Subagent wrapper and invocation contract.
+- `.agents/monitoring-agent.md` → Subagent wrapper and invocation contract.
 - `monitoring-agent/SKILL.md` → orchestration instructions.
 - `monitoring-agent/references/` → whitelist and normalized result contract.
 - `monitoring-agent/runtime.py` → real Sentry and GitHub Actions HTTP adapters.

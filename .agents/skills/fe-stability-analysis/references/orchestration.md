@@ -15,7 +15,7 @@
 5. **等待 Phase 完成**：每一 Phase 必须收到该 Phase 规定的返回值后，方可进入下一 Phase。
 6. **不得因「更高效」「更熟悉」而替换路径**：即使其他 skill 看似能完成同类任务，仍必须走本编排链路。
 7. **范围与日期以本次 Phase 1「fe-stability-query」为准**：每次请求必须先解析项目范围并重算日期，不得沿用会话或旧报告中的区间。
-8. **结果缓存**：见 [cache-policy.md](cache-policy.md)。**含今天必重查**；不含今天且当前范围对应的缓存文件齐全且 meta 与 `scope` / `app_name` 一致时，**允许直接返回缓存**，跳过 Phase 2–4。
+8. **结果缓存**：见 [cache-policy.md](cache-policy.md)。覆盖稳定窗口的数据必重查；不覆盖且当前范围对应的缓存文件齐全、meta 与 `scope_key` / `app_names` 一致时，允许跳过 Phase 2–4。
 
 ### 子 skill 白名单（仅此五个）
 
@@ -67,7 +67,7 @@ Phase 1 完成后解析 `{OUTPUT_DIR}`，用于缓存检查及后续 Phase：
 
 | 产物 | 文件名 |
 |------|--------|
-| 分析中间文件 | `{OUTPUT_DIR}/analysis-{comparison_id}.json` |
-| 唯一报告 | `{OUTPUT_DIR}/frontend-stability-{scope}-{comparison_id}.md` |
+| 分析中间文件 | `{OUTPUT_DIR}/analysis-{scope_key}-{comparison_id}.json` |
+| 唯一报告 | `{OUTPUT_DIR}/frontend-stability-apps-{scope_key}-{comparison_id}.md` |
 
-`scope=global` 时文件名中的 scope 为 `global`；`scope=app` 时使用明确指定的 `{app_name}`。缓存不得跨范围复用。
+`scope_key` 使用排序后的项目名单哈希。缓存不得跨范围复用。

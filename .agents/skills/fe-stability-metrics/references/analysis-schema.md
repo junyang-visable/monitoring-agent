@@ -2,7 +2,7 @@
 
 `fe-stability-metrics` 输出、`fe-stability-report-writer` 输入的唯一契约。
 
-**当前版本**：`1.2`（新增数据稳定窗口与临时结果字段）
+**当前版本**：`1.3`（新增批量项目范围与范围隔离文件名）
 
 ## comparison_id 生成规则
 
@@ -16,14 +16,14 @@
 ## 输出文件
 
 ```
-{OUTPUT_DIR}/analysis-{comparison_id}.json
+{OUTPUT_DIR}/analysis-{scope_key}-{comparison_id}.json
 ```
 
 ## 顶层结构
 
 ```yaml
 meta:
-  schema_version: "1.2"
+  schema_version: "1.3"
   comparison_id: string
   today: yyyyMMdd                 # 跑批当日
   stability_window_days: number   # 最近仍可能回补的数据日数量
@@ -36,8 +36,8 @@ meta:
   curr_days / base_days: number
   curr_start_fmt / curr_end_fmt / base_start_fmt / base_end_fmt: string
   is_weekly_report: boolean
-  scope: global | app
-  app_name: string | null         # 仅 scope=app 时为指定项目
+  scope_key: string                # apps-<sorted-app-names 的 SHA-256 前 12 位>
+  app_names: [string]              # 传入或默认解析出的去重标准项目名
   output_dir: string
 
 global:
@@ -47,7 +47,7 @@ global:
   metrics: [ MetricItem ]
   summary_insight: string
 
-by_app:                           # 仅 scope=app 时可选，且只允许一个 app_name
+by_app:                           # 仅包含请求范围内项目
   {app_name}:
     desc: string
     totals: { ... }

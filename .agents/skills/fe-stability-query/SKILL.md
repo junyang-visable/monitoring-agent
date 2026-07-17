@@ -1,17 +1,17 @@
 ---
 name: fe-stability-query
 description: 接收已解析的项目范围与时间意图，生成包含查询参数、缓存标识及 ODPS SQL 批次的前端稳定性查询计划。
-version: 1.7.0
+version: 1.9.0
 ---
 
 # 查询计划生成
 
 ## 职责边界
 
-本 skill 接收编排器已解析的 `scope`、可选 `app_name` 与时间意图，生成一个完整查询计划：
+本 skill 接收编排器已解析的非空 `app_names` 与时间意图，生成一个完整查询计划：
 
 1. 构建 CURR / BASE 查询参数与缓存标识，并校验周期不重叠
-2. 读取 [references/queries.md](references/queries.md) 中的 SQL 模板
+2. 读取 [references/batch-queries.md](references/batch-queries.md) 中的 SQL 模板
 3. 按分析范围生成 round1 基础 SQL 与 round4 明细 SQL；每条 SQL 同时覆盖 CURR/BASE 并返回 `period`
 4. 返回可直接执行的分批查询计划
 
@@ -90,24 +90,16 @@ version: 1.7.0
 
 ## Step 2：生成合并基础查询 SQL
 
-使用编排器传入的 `scope`：
+使用编排器传入的去重、排序后的标准 `app_names`。用户未指定项目时，由上游从 `app-mappings.md` 解析全部“启用”项目后再传入；本 skill 不猜测或补全项目列表。`app_names` 缺失或为空时阻塞返回。
 
-| `scope` | 规则 |
-|---|---|
-| `global` | 不添加 `app_name` 条件；只生成总体所需的 A、B 与 C 查询 |
-| `app` | 必须同时提供从 `fe-stability-analysis/references/app-mappings.md` 解析出的标准 `app_name`；所有查询添加 `AND app_name = '{APP}'`，且只查询该应用 |
-
-不得在本 skill 内解析项目别名或猜测范围。`scope=app` 但缺少标准 `app_name` 时阻塞返回。
-
-读取 [references/queries.md](references/queries.md)，用 Step 1 的日期变量及范围条件替换模板中的占位符。每个逻辑查询只生成一条 SQL，同时查询 CURR/BASE。
+只读取 [references/batch-queries.md](references/batch-queries.md)，用 Step 1 的日期变量及范围条件替换模板中的占位符。每个逻辑查询只生成一条 SQL，同时查询 CURR/BASE。
 
 **替换规则**：
 
 - 所有查询：同时替换 `{CURR_START}`/`{CURR_END}` 与 `{BASE_START}`/`{BASE_END}`
 - 所有查询结果：必须包含 `period`，值只能为 `CURR` 或 `BASE`
 
-- `scope=app`：`{APP}` 仅替换为用户指定的 `app_name`
-- `scope=global`：移除模板中的 `{APP_FILTER}`；`scope=app`：`{APP_FILTER}` 替换为 `AND app_name = '{APP}'`
+- 将按字典序去重后的标准应用名安全替换到 `{APP_LIST}`。结果必须含 `app_name`，不得在本 skill 外再拼接项目维度。
 
 **第一轮（2 条，可并行）**：
 
@@ -135,7 +127,7 @@ version: 1.7.0
 {C_ID}
 ```
 
-示例：`C1`、`C2`。项目范围的 SQL 仍通过 `{APP_FILTER}` 限定目标应用。
+示例：`C1`、`C2`。项目范围统一通过 `{APP_LIST}` 限定目标应用，并以 `app_name, period` 为聚合和 Top N 分区维度。
 
 PERIOD：`CURR` 用 `{CURR_START}/{CURR_END}`，`BASE` 用 `{BASE_START}/{BASE_END}`。
 
@@ -148,7 +140,7 @@ round1 与 round4 必须在本次调用中一起写入查询计划；每条查�
 向编排器返回一个完整查询计划：
 
 1. **计划摘要**：查询范围 + `当前 6/10–6/10（1 天）vs 基线 6/9–6/9（1 天）` + `period=CURR|BASE`
-2. **计划参数**：`scope`、可选 `app_name`、全部日期变量、`IS_WEEKLY_REPORT`、`COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`
+2. **计划参数**：`app_names`、全部日期变量、`IS_WEEKLY_REPORT`、`COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`
 3. **SQL 批次列表**，每条包含：
    - `id`：如 `A`、`C1`
    - `round`：1 或 4；每个 id 只出现一次
@@ -157,8 +149,7 @@ round1 与 round4 必须在本次调用中一起写入查询计划；每条查�
 示例结构：
 
 ```yaml
-scope: global
-app_name: null
+app_names: ["search-frontend", "product-editor-frontend"]
 date_vars:
   CURR_START: "20260610"
   CURR_END: "20260610"
@@ -187,6 +178,10 @@ queries:
 ```
 
 **本 skill 执行完毕，返回控制权给编排器。**
+
+## 批量项目模式
+
+无论 `app_names` 包含一个、多个或全部启用项目，均固定生成 A、B、C1–C6 共 8 条 SQL。A/B 按 `app_name` 聚合；C1–C6 按 `app_name, period` 计算各项目独立 Top N。
 
 ---
 

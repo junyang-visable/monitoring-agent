@@ -10,7 +10,7 @@ Group C 查询结果，query id 格式：
 {C_ID}
 ```
 
-示例：`C1`、`C2`。每条结果必须含 `period` 列，项目范围由查询条件限定。
+示例：`C1`、`C2`。每条结果必须含 `period` 和 `app_name` 列。
 
 | E ID | 字段 key | category |
 |------|----------|----------|
@@ -19,13 +19,13 @@ Group C 查询结果，query id 格式：
 | C3 | message | js_runtime |
 | C4 | message | white_screen |
 | C5 | message（+ event_type） | ssr / custom / component |
-| C6 | page_id + ds | white_screen page 分布 |
+| C6 | page_id | white_screen page 分布 |
 
 C6 为必选，用于白屏 page 分布，写入对应 `ErrorDetailItem.extra.page_breakdown`。慢请求不再进入稳定性分析查询。
 
 ## 合并规则
 
-对同一 `category + key`（项目范围可附带唯一 `app_name`） ：
+对同一 `app_name + category + key`（全域范围没有 `app_name` 时使用空值） ：
 
 1. 从同一条 E 查询结果中读取 `period=CURR` 的 `count`
 2. 从同一条 E 查询结果中读取 `period=BASE` 的 `count`（无则 0）
@@ -91,7 +91,7 @@ impact_score = curr_daily × (1 + max(change_pct, 0) / 100)
 每条写入 `ErrorDetailItem`（见 analysis-schema.md），并汇总：
 
 - `issues.{category}.details[]` — 该类别下全部明细（按 impact_score 降序，最多 20 条/类）
-- `issues.{category}.by_app.{app}[]` — 仅项目范围可选写入该唯一应用
+- `issues.{category}.by_app.{app}[]` — 写入对应应用
 - `priority_actions[]` — 全域 TOP 15 待处理项
 - `spike_alerts[]` — 全部 `is_spike=true`（最多 30 条）
 

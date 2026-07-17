@@ -33,7 +33,7 @@ Do not replace any real call with sample data. If a capability cannot be invoked
 
 ## Time range
 
-`time_range` is inherited from `defaults` and can be overridden per project or by a manual request. Support `today`, `yesterday`, `last_<N>d` (for example `last_7d`), and an explicit mapping:
+`time_range` is inherited from `defaults` and can be overridden per project or by a manual request. Support `today`, `yesterday`, `last_<N>d` (for example `last_7d`), `last_<N>h` (for example `last_24h`), and an explicit mapping:
 
 ```yaml
 time_range:
@@ -41,7 +41,7 @@ time_range:
   end: "2026-07-08T00:00:00Z"
 ```
 
-Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 1` days and ends at the current time, so it includes today. Convert the resolved range to `今天`、`昨天`、`最近 N 天` or `YYYY-MM-DD 至 YYYY-MM-DD` before invoking Stability SDK. Do not apply a time range to `tracking_patrol`; it always reads the latest run unless explicitly triggered.
+Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 1` days and ends at the current time, so it includes today; `last_<N>h` is an exact rolling-hour window. Datadog and Sentry receive the exact UTC `start`/`end`. Stability SDK is natural-day data and receives the calendar-day range covering the window, not a false claim of hour precision. Do not apply a time range to `tracking_patrol`; it always reads the latest run unless explicitly triggered.
 
 ## Output
 

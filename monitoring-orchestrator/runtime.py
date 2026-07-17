@@ -14,6 +14,34 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
+def _load_dotenv() -> None:
+    """Read a .env file from the project root and inject unset vars into os.environ.
+
+    Searches upward from this file's directory until it finds a .env, stops at filesystem
+    root. Only sets variables that are not already present in the environment, so explicit
+    exports always take precedence.
+    """
+    here = Path(__file__).resolve().parent
+    for parent in [here, *here.parents]:
+        candidate = parent / ".env"
+        if candidate.is_file():
+            for line in candidate.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip()
+                # Strip optional surrounding quotes
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                if key and key not in os.environ:
+                    os.environ[key] = value
+            break
+
+
+_load_dotenv()
+
+
 STATUSES = {"ok", "degraded", "unavailable"}
 
 
@@ -57,11 +85,12 @@ def resolve_time_range(value: str | dict[str, str] | None, now: datetime | None 
             start = end - timedelta(days=1)
             label = "yesterday"
         else:
-            match = re.fullmatch(r"last_(\d+)d", preset)
+            match = re.fullmatch(r"last_(\d+)([dh])", preset)
             if not match or int(match.group(1)) < 1:
-                raise ValueError("time_range must be today, yesterday, last_<N>d, or a {start, end} mapping")
-            days = int(match.group(1))
-            start, end, label = today - timedelta(days=days - 1), current, preset
+                raise ValueError("time_range must be today, yesterday, last_<N>d, last_<N>h, or a {start, end} mapping")
+            amount, unit = int(match.group(1)), match.group(2)
+            start = current - timedelta(hours=amount) if unit == "h" else today - timedelta(days=amount - 1)
+            end, label = current, preset
 
     if end <= start:
         raise ValueError("time_range.end must be later than time_range.start")

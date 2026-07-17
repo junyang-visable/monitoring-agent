@@ -4,8 +4,8 @@ defaults:
   timeout_seconds: 60
   timezone: UTC
   # Shared range for Datadog, Stability SDK, and Sentry. Accepted presets:
-  # today, yesterday, last_<N>d. A project may instead set {start, end} in ISO-8601.
-  time_range: today
+  # today, yesterday, last_<N>d, or last_<N>h. A project may instead set {start, end} in ISO-8601.
+  time_range: last_24h
   tracking_patrol:
     mode: read_latest
 
@@ -20,13 +20,13 @@ projects:
       # Optional override. Omit when the Datadog service equals app_name.
       service: "visable-dev/search-frontend"
     stability_sdk:
-      enabled: true
+      enabled: false
       output_mode: analysis_only
     sentry:
       enabled: true
-      organization: "<configure Sentry organization>"
-      project: "<configure Sentry project>"
-      base_url: "https://sentry.io"
+      organization: "visable-gmbh"
+      project: "search-frontend"
+      base_url: "https://us.sentry.io"
       token_env: SENTRY_AUTH_TOKEN
     tracking_patrol:
       enabled: true

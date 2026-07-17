@@ -10,11 +10,12 @@ defaults:
 projects:
   search-frontend:
     enabled: true
-    service: search-frontend
+    app_name: search-frontend
     environment: production
     datadog:
       enabled: true
-      query: "<configure Datadog query>"
+      # Optional override. Omit when the Datadog service equals app_name.
+      # service: "datadog-service-name"
     stability_sdk:
       enabled: true
       date_range: today

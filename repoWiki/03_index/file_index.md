@@ -1,6 +1,6 @@
 # File Index
 
-- `README.md` → placeholder project documentation.
+- `README.md` → Monitoring Orchestrator overview and usage.
 - `.agents/monitoring-agent.md` → Subagent wrapper and invocation contract.
 - `monitoring-orchestrator/SKILL.md` → orchestration instructions.
 - `monitoring-orchestrator/references/` → whitelist and normalized result contract.

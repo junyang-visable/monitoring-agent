@@ -37,10 +37,10 @@ flowchart LR
 - Four paths run independently; one timeout or exception cannot block other signals.
 - Missing credentials produce `unavailable`; metrics remain empty.
 - Sentry compares adjacent 24-hour windows and omits percentage delta when baseline is zero.
-- Stability SDK always queries the rolling previous 24 hours through `fe-stability-analysis`.
+- Stability SDK invokes `fe-stability-analysis` with `output_mode=analysis_only`, consumes `analysis.json`, and does not generate a separate Stability Markdown report.
 - tracking_patrol reads latest by default; `trigger` is explicit in config or manual override.
 - Tokens are read from environment variables and recursively redacted in evidence.
-- Datadog and Stability SDK remain agent capability calls; the Python runtime does not fabricate or emulate MCP results.
+- Datadog and Stability SDK remain agent capability calls; the Python runtime does not fabricate or emulate MCP results. Datadog resolves `datadog.service` first and falls back to the project `app_name`.
 
 ## Dependencies
 

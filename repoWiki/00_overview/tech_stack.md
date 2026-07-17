@@ -1,8 +1,7 @@
 # Tech Stack
 
-- runtime → not detected; implementation stack to be established.
+- runtime → Python standard library HTTP adapters; Markdown Agent Skills.
 - frontend → none detected.
 - backend → none detected.
-- storage → filesystem artifacts planned.
-- infra → external MCP, Sentry REST, GitHub Actions integrations planned.
-
+- storage → filesystem report and evidence artifacts.
+- infra → Datadog MCP, Stability SDK, Sentry REST, GitHub Actions.

@@ -15,7 +15,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 
 ## Real capability calls
 
-- Datadog → invoke the configured `user-datadog` MCP capability for metrics, monitors, and events.
+- Datadog → invoke the configured `user-datadog` MCP capability for metrics, monitors, and events. Resolve the filter service as `datadog.service` when configured; otherwise use the project's `app_name`.
 - Stability SDK → invoke `fe-stability-analysis` with `output_mode=analysis_only`; consume its `analysis.json` summary without generating a separate Stability Markdown report.
 - Sentry → call the Sentry REST API using the configured organization, project, and time windows.
 - tracking_patrol → read the latest GitHub Actions run by default; dispatch a new run only when mode is `trigger` or a manual override requests it.

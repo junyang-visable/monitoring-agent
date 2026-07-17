@@ -10,3 +10,5 @@ Configuration-driven monitoring agent for collecting signals from multiple proje
 4. Inspect reports and redacted evidence under `artifacts/monitoring/`.
 
 The agent performs real calls only. Missing credentials, permissions, empty responses, and timeouts are reported as degraded or unavailable; no synthetic metrics are generated.
+
+For Datadog, set `datadog.service` only when it differs from the project's `app_name`; otherwise the agent uses `app_name` as the service filter.

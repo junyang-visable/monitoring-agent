@@ -7,8 +7,7 @@ graph TD
   Core --> Reports[Report Artifacts]
 ```
 
-- configuration → planned config files.
-- monitoring core → planned orchestration entry.
-- capability adapters → planned external integrations.
-- report artifacts → planned output files.
-
+- configuration → `monitoring-orchestrator/config/`.
+- monitoring core → `.agents/monitoring-agent.md` and `monitoring-orchestrator/SKILL.md`.
+- capability adapters → Datadog MCP, Stability SDK, Sentry REST, GitHub Actions.
+- report artifacts → `artifacts/monitoring/`.

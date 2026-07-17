@@ -11,7 +11,7 @@ Agent-optimized knowledge base for monitoring-orchestrator.
 
 ### Getting Started
 - [Big Picture](./00_overview/big_picture.md) - system flow and constraints
-- [Tech Stack](./00_overview/tech_stack.md) - detected and planned stack
+- [Tech Stack](./00_overview/tech_stack.md) - runtime and integrations
 
 ### Navigation
 

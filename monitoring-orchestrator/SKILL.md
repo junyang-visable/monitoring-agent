@@ -12,7 +12,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 1. Parse and validate the configuration.
 2. Resolve `time_range`, using a project value when present or `defaults.time_range` otherwise. A manual request may override it for this run only.
 3. Start Datadog, Sentry, and tracking patrol paths in parallel for each enabled project.
-4. Start one shared Stability SDK path for all enabled Stability projects: invoke `fe-stability-analysis` once with sorted standard `app_names`, the resolved time intent, `output_mode=analysis_only`, and `output_dir=artifacts/fe-stability-analysis/<run_id>/`; use its project JSON path mapping to attach each project's Stability result.
+4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Start one shared Stability SDK path for all enabled Stability projects: invoke `fe-stability-analysis` once with sorted standard `app_names`, the resolved time intent, `output_mode=analysis_only`, and `output_dir=artifacts/fe-stability-analysis/<run_id>/`; use its project JSON path mapping to attach each project's Stability result.
 5. Apply the per-path timeout and capture call metadata.
 6. Normalize every response to the contract in `references/contracts.md`.
 7. Convert exceptions, missing credentials, permission errors, empty responses, and timeouts into `degraded` or `unavailable` results.
@@ -47,7 +47,7 @@ Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 
 
 - Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
 - Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
-- Evidence → `artifacts/monitoring/<timestamp>/<project>/<signal>.json`
+- Evidence → `artifacts/monitoring/<run_id>/<project>/<signal>.json` (`run_id` is UTC `YYYYMMDDTHHMMSSZ`)
 - Stability overview → `artifacts/fe-stability-analysis/<run_id>/overview.json`
 - Stability projects → `artifacts/fe-stability-analysis/<run_id>/{app_name}.json`
-- Reports → `artifacts/monitoring/<timestamp>/report.md` and `report.json`
+- Reports → `artifacts/monitoring/<run_id>/report.md` and `report.json`

@@ -28,7 +28,7 @@ Rules:
 Write one normalized run report in both Markdown and JSON:
 
 ```yaml
-run_id: string # directory timestamp
+run_id: string # UTC directory timestamp: YYYYMMDDTHHMMSSZ
 observed_at: ISO-8601 timestamp
 time_range:
   label: string

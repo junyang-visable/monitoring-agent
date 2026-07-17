@@ -27,8 +27,8 @@ Phase 1 对下列字段按固定键顺序序列化后计算 SHA-256，取前 24 
   "entries": {
     "<cache_key>": {
       "key_input": { "app_names": [], "time_range": {}, "time_granularity": "hour", "partition_timezone": "GMT+1" },
-      "source_run_id": "20260717_160844",
-      "source_output_dir": "/abs/.../artifacts/fe-stability-analysis/20260717_160844",
+      "source_run_id": "20260717T080844Z",
+      "source_output_dir": "/abs/.../artifacts/fe-stability-analysis/20260717T080844Z",
       "overview_path": "/abs/.../overview.json",
       "project_paths": { "search-frontend": "/abs/.../search-frontend.json" },
       "meta_fingerprint": "<sha256>",

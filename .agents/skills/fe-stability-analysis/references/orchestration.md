@@ -55,7 +55,7 @@ Phase 1 完成后解析 `{OUTPUT_DIR}` 与 `{CACHE_DIR}`，用于缓存检查及
 | 1 | 调用方显式传入 `output_dir` | 该路径；Monitoring Orchestrator 必须传入当前 run 的 `artifacts/fe-stability-analysis/<run_id>/` |
 | 2 | 用户本次对话明确指定路径 | 用户给定的绝对或相对路径 |
 | 3 | 环境变量 `FE_STABILITY_OUTPUT_DIR` 已设置 | 该变量值 |
-| 4 | 默认 | 在 Phase 1 开始时生成 `run_id=YYYYMMDD_HHMMSS`；能识别 git 根目录时为 `{git_root}/artifacts/fe-stability-analysis/{run_id}/` |
+| 4 | 默认 | 在 Phase 1 开始时以 UTC 生成 `run_id=YYYYMMDDTHHMMSSZ`；能识别 git 根目录时为 `{git_root}/artifacts/fe-stability-analysis/{run_id}/` |
 | 5 | 兜底 | `{cwd}/artifacts/fe-stability-analysis/{run_id}/` |
 
 > **禁止**写入 skill 安装目录（`~/.agents/skills/`、`./skills/` 下的路径）。
@@ -74,6 +74,6 @@ Phase 1 完成后解析 `{OUTPUT_DIR}` 与 `{CACHE_DIR}`，用于缓存检查及
 | 项目分析 | `{OUTPUT_DIR}/{app_name}.json` |
 | 唯一报告 | `{OUTPUT_DIR}/report.md` |
 
-`run_id` 负责目录隔离；`scope_key` 与 `comparison_id` 保留在 JSON `meta` 中用于缓存校验。缓存不得跨范围复用。
+`run_id` 负责目录隔离，且**必须**使用 UTC 格式 `YYYYMMDDTHHMMSSZ`；`scope_key` 与 `comparison_id` 保留在 JSON `meta` 中用于缓存校验。缓存不得跨范围复用。
 
 `run_id` 取 `{OUTPUT_DIR}` 的末级目录名；调用方显式传入 `output_dir` 时必须确保该目录名就是本次 run 的 `run_id`。

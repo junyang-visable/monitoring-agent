@@ -1,7 +1,7 @@
 ---
 name: fe-stability-analysis
-description: 从 ODPS 查询前端稳定性数据并生成分析报告，支持任意日期范围的当前周期与基线周期环比对比。当用户需要前端稳定性、错误分析、稳定性报告、错误趋势或稳定性周报时使用。
-version: 4.5.0
+description: 从 ODPS 查询前端稳定性数据并生成结构化分析结果；默认生成 Markdown 报告，也支持仅返回分析结果供监控编排消费。
+version: 4.6.0
 ---
 
 # 前端稳定性分析编排器
@@ -10,7 +10,7 @@ version: 4.5.0
 
 你是**编排器**，不是通用分析 agent。收到稳定性相关请求时：
 
-1. **按 Phase 1 → [缓存检查] → 2 → 3 → 4 执行**；缓存命中时跳过 Phase 2–4，Phase 1 每次必跑。
+1. **按 Phase 1 → [缓存检查] → 2 → 3 → [4] 执行**；`output_mode=analysis_only` 时 Phase 4 不执行；缓存命中时跳过后续 Phase，Phase 1 每次必跑。
 2. **只调用白名单子 skill**（见 [orchestration.md](references/orchestration.md)），**禁止**擅自调用其他任何 skill、MCP、子 agent。
 3. **禁止绕过子 skill**：不得直接跑 `maxc`/shell SQL、不得手写报告、不得在编排器内自行算环比或写 `analysis.json`。
 4. 每个 Phase 必须按对应子 skill 的定义完整执行，收到该 Phase 规定返回值后才能进入下一 Phase。
@@ -27,8 +27,15 @@ fe-stability-analysis（编排器）
 ├── [缓存检查] cache-policy               → 含今天 / 无缓存 → 继续；否则返回历史结果
 ├── Phase 2: dataworks-dev-assistant      → 执行 SQL
 ├── Phase 3: fe-stability-metrics         → 分析 → analysis.json
-└── Phase 4: fe-stability-report-writer   → 渲染并审校一份 Markdown 报告
+└── Phase 4: fe-stability-report-writer   → `output_mode=report` 时渲染并审校一份 Markdown 报告
 ```
+
+## 输出模式
+
+| `output_mode` | 行为 | 适用场景 |
+|---|---|---|
+| `report`（默认） | 执行 Phase 1–4，输出 `analysis.json` 和唯一 Markdown 报告 | 直接请求稳定性分析或周报 |
+| `analysis_only` | 执行 Phase 1–3，返回 `analysis.json` 与结构化摘要，不生成 Markdown 报告 | Monitoring Orchestrator 的 Stability SDK 信号 |
 
 ## 分析范围（必须先确定）
 
@@ -52,7 +59,7 @@ fe-stability-analysis（编排器）
 | 产物 | 说明 |
 |------|------|
 | `analysis-{comparison_id}.json` | 结构化分析中间文件 |
-| `frontend-stability-{scope}-{comparison_id}.md` | 唯一 Markdown 分析报告；`scope` 为 `global` 或项目名 |
+| `frontend-stability-{scope}-{comparison_id}.md` | 仅 `output_mode=report` 时生成的唯一 Markdown 分析报告；`scope` 为 `global` 或项目名 |
 
 ---
 
@@ -90,10 +97,10 @@ fe-stability-analysis（编排器）
 
 ## 缓存检查（Phase 1「fe-stability-query」之后）
 
-按 [references/cache-policy.md](references/cache-policy.md) 与 [orchestration.md](references/orchestration.md) 解析 `{OUTPUT_DIR}` 并检查：
+按 [references/cache-policy.md](references/cache-policy.md) 与 [orchestration.md](references/orchestration.md) 解析 `{OUTPUT_DIR}` 并检查；缓存所需文件由 `output_mode` 决定：
 
 1. 若 `includes_unstable_data = true` → **继续 Phase 2**
-2. 若当前范围对应的 `analysis.json` 与一份 Markdown 报告均存在，且 `meta` 与 Phase 1 日期、范围及稳定窗口一致 → **直接返回缓存报告路径**，流程结束，注明「命中历史缓存」
+2. 若当前模式所需缓存文件存在，且 `meta` 与 Phase 1 日期、范围及稳定窗口一致 → **直接返回缓存结果**，流程结束，注明「命中历史缓存」
 3. 否则 → **继续 Phase 2**
 
 ---
@@ -121,9 +128,13 @@ fe-stability-analysis（编排器）
 
 **等待返回**：`analysis.json` 路径 + `comparison_id` + 摘要（含 P0 数量、突增条数、首要处理项）。
 
+若 `output_mode=analysis_only`：到此结束，返回 `analysis.json` 路径、`comparison_id`、范围、临时结果标记和摘要；**不得调用** `fe-stability-report-writer` 或 `report-generator`。
+
 ---
 
 ## Phase 4：报告渲染
+
+仅 `output_mode=report` 时执行。本模式未显式提供时默认为 `report`。
 
 调用 **`fe-stability-report-writer`**，传入：
 
@@ -138,7 +149,7 @@ fe-stability-analysis（编排器）
 
 ## 编排原则
 
-- Phase 1 **每次必跑**；Phase 2–4 按 [cache-policy.md](references/cache-policy.md) 决定是否跳过
+- Phase 1 **每次必跑**；Phase 2–3 按 [cache-policy.md](references/cache-policy.md) 决定是否跳过；Phase 4 仅 `output_mode=report` 时执行
 - **含今天的范围必须重查**；不含今天且缓存有效时可返回历史结果
 - **仅调用白名单五个子 skill**；禁止调用 `fe-stability-generate`、`odps-skill`、`maxcompute-cli-guidance-ncs` 等任何其他 skill
 - SQL 模板仅由 `fe-stability-query` 维护；编排器与 `dataworks-dev-assistant` **不得**自行编写或修改 SQL 模板

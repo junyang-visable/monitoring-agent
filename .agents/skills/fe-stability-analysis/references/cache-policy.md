@@ -7,7 +7,7 @@
 满足**任一**条件则 **完整执行 Phase 2 → 3 → 4**：
 
 1. **`includes_unstable_data = true`**：范围覆盖最近仍可能回补的数据日
-2. **缓存文件不完整**：当前范围的 `analysis.json` 或唯一 Markdown 报告缺失
+2. **缓存文件不完整**：`output_mode=analysis_only` 时缺少 `analysis.json`；`output_mode=report` 时缺少 `analysis.json` 或唯一 Markdown 报告
 3. **缓存与本次日期或范围不一致**：`analysis.json` 内 `meta` 与 Phase 1 计算的 CURR/BASE、`scope`、`app_name` 不匹配
 4. **用户明确要求重新跑数 / 刷新 / 最新数据**
 
@@ -28,9 +28,13 @@ Phase 1 由 `fe-stability-query` 计算最近仍可能回补的数据日。默�
 **同时**满足：
 
 1. `includes_unstable_data = false`
-2. 以下当前范围对应的两文件均存在且可读：
+2. 当前模式要求的缓存文件存在且可读：
 
 ```
+# output_mode=analysis_only
+{OUTPUT_DIR}/analysis-{comparison_id}.json
+
+# output_mode=report
 {OUTPUT_DIR}/analysis-{comparison_id}.json
 {OUTPUT_DIR}/frontend-stability-global-{comparison_id}.md
 # 或（指定项目时）
@@ -39,7 +43,7 @@ Phase 1 由 `fe-stability-query` 计算最近仍可能回补的数据日。默�
 
 3. `analysis.json` 中 `meta.schema_version=\"1.2\"`，且 `meta.comparison_id`、`meta.curr_start/end`、`meta.base_start/end`、`meta.scope`、`meta.app_name`（项目范围时）、`meta.stable_through` 与 Phase 1 一致
 
-→ **跳过 Phase 2、3、4**，直接 Read 缓存报告返回用户，并注明「命中历史缓存，未重新查数」。
+→ **跳过后续 Phase**，直接返回缓存结果，并注明「命中历史缓存，未重新查数」。
 
 ## Phase 1「fe-stability-query」不可跳过
 

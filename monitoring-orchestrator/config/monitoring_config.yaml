@@ -17,7 +17,8 @@ projects:
       query: "<configure Datadog query>"
     stability_sdk:
       enabled: true
-      date_range: rolling_24h
+      date_range: today
+      output_mode: analysis_only
     sentry:
       enabled: true
       organization: "<configure Sentry organization>"

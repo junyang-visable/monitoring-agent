@@ -23,7 +23,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 ## Real capability calls
 
 - Datadog → invoke the configured `user-datadog` MCP capability for metrics, monitors, and events. Pass the resolved UTC `start` and `end`; resolve the filter service as `datadog.service` when configured, otherwise use the project's `app_name`.
-- Stability SDK → invoke `fe-stability-analysis` once per monitoring run with the enabled projects' standard `app_names`, equivalent calendar-day time intent, and `output_mode=analysis_only`. Consume each project's `by_app` summary without generating a separate Stability Markdown report.
+- Stability SDK → invoke `fe-stability-analysis` once per monitoring run with the enabled projects' standard `app_names`, resolved `time_range`, `stability_sdk.time_granularity`, `partition_timezone`, `stability_window_hours`, and `output_mode=analysis_only`. For `time_granularity=hour`, the SDK queries completed `ds/hh` partitions in the configured partition timezone. Consume each project's `by_app` summary without generating a separate Stability Markdown report.
 - Sentry → call the Sentry REST API using the configured organization, project, and resolved window. Use the immediately preceding, equal-duration window as the baseline.
 - tracking_patrol → read the latest GitHub Actions run by default; dispatch a new run only when mode is `trigger` or a manual override requests it.
 

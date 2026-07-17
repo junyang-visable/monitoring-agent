@@ -4,7 +4,7 @@
 
 ## 前端稳定性报告 — 项目范围（{CURR_START_FMT} - {CURR_END_FMT} vs {BASE_START_FMT} - {BASE_END_FMT}）
 
-数据来源：`icbu_de.visable_fe_full_monitoring_data_v1`，仅统计 production、`level=error`，并排除 `api_slow`。对比采用日均值归一化。
+数据来源：`icbu_de.visable_fe_full_monitoring_data_v1`，仅统计 production、`level=error`，并排除 `api_slow`。对比采用与 `meta.time_granularity` 一致的单位速率归一化；小时模式明确标注“每小时”。
 
 ### 优先处理项
 

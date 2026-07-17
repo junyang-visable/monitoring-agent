@@ -1,14 +1,14 @@
 ---
 name: fe-stability-query
 description: 接收已解析的项目范围与时间意图，生成包含查询参数、缓存标识及 ODPS SQL 批次的前端稳定性查询计划。
-version: 1.9.0
+version: 2.0.0
 ---
 
 # 查询计划生成
 
 ## 职责边界
 
-本 skill 接收编排器已解析的非空 `app_names` 与时间意图，生成一个完整查询计划：
+本 skill 接收编排器已解析的非空 `app_names`、时间意图与可选粒度配置，生成一个完整查询计划：
 
 1. 构建 CURR / BASE 查询参数与缓存标识，并校验周期不重叠
 2. 读取 [references/batch-queries.md](references/batch-queries.md) 中的 SQL 模板
@@ -21,7 +21,7 @@ version: 1.9.0
 
 ## Step 1：构建查询计划参数
 
-根据用户的表述确定对比周期（**今天** = 执行 Phase 1 当日的系统日期，**禁止**沿用本会话或历史跑批中的日期）：
+`time_granularity=day` 时，根据用户的表述确定对比周期（**今天** = 执行 Phase 1 当日的系统日期，**禁止**沿用本会话或历史跑批中的日期）：
 
 | 用户说法 | CURR | BASE |
 |---------|------|------|
@@ -75,15 +75,27 @@ version: 1.9.0
 - `IS_PROVISIONAL = INCLUDES_UNSTABLE_DATA`。
 - 查询范围覆盖不稳定窗口时必须重新查数，且不得命中缓存。
 
+### 小时粒度
+
+`time_granularity=hour` 时必须同时传入 `partition_timezone` 和 `time_range`。将 UTC 时间范围转换为分区时区后处理：
+
+1. 将 `CURR_END_AT` 向下取整到整点；当前未完成小时永不查询。
+2. `last_<N>h` 的 `CURR_START_AT = CURR_END_AT - N 小时`；BASE 是紧邻且等长的前 N 小时。
+3. 两个周期均为半开区间 `[start, end)`；跨日通过 `ds` 与零填充的 `hh` 共同过滤。
+4. `stability_window_hours`（默认 1）内的已完成小时仍视为不稳定；任一周期覆盖它则 `includes_unstable_data=true`。
+5. 小时模式必须输出 `CURR_START_AT`、`CURR_END_AT`、`BASE_START_AT`、`BASE_END_AT`（ISO8601）、`CURR_HOURS`、`BASE_HOURS`、`partition_timezone` 和 `time_granularity=hour`。`comparison_id` 使用这四个整点时间戳，不能只使用日期。
+
 ---
 
 ## 查询计划参数纪律（强制）
 
 1. **每次 Phase 1 必须重新计算**，不得引用会话记忆、不得假设「与上次相同」。
 2. **今天**取系统当前日期（非用户消息时间戳、非上次跑批日期）。
-3. 参数构建完成后输出计划摘要，格式：
+3. 参数构建完成后输出计划摘要。日模式格式：
    > 本次分析：今天 {TODAY}；CURR {CURR_START}–{CURR_END}（{CURR_DAYS} 天）vs BASE {BASE_START}–{BASE_END}（{BASE_DAYS} 天）；comparison_id=`{COMPARISON_ID}`；includes_unstable_data={INCLUDES_UNSTABLE_DATA}；is_provisional={IS_PROVISIONAL}
-4. 将 `COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、`STABILITY_WINDOW_DAYS`、`STABLE_THROUGH`、`DATA_AS_OF`、`TODAY` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 判断。
+   小时模式格式：
+   > 本次分析：分区时区 {PARTITION_TIMEZONE}；CURR [{CURR_START_AT}, {CURR_END_AT})（{CURR_HOURS} 小时）vs BASE [{BASE_START_AT}, {BASE_END_AT})（{BASE_HOURS} 小时）；comparison_id=`{COMPARISON_ID}`；includes_unstable_data={INCLUDES_UNSTABLE_DATA}；is_provisional={IS_PROVISIONAL}
+4. 将 `COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、粒度及稳定窗口参数、`DATA_AS_OF` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 判断。
 5. `comparison_id` 规则见 [fe-stability-metrics/references/analysis-schema.md](../fe-stability-metrics/references/analysis-schema.md)。
 
 ---
@@ -92,11 +104,13 @@ version: 1.9.0
 
 使用编排器传入的去重、排序后的标准 `app_names`。用户未指定项目时，由上游从 `app-mappings.md` 解析全部“启用”项目后再传入；本 skill 不猜测或补全项目列表。`app_names` 缺失或为空时阻塞返回。
 
-只读取 [references/batch-queries.md](references/batch-queries.md)，用 Step 1 的日期变量及范围条件替换模板中的占位符。每个逻辑查询只生成一条 SQL，同时查询 CURR/BASE。
+只读取 [references/batch-queries.md](references/batch-queries.md)，用 Step 1 的分区谓词替换模板中的占位符。每个逻辑查询只生成一条 SQL，同时查询 CURR/BASE。
 
 **替换规则**：
 
-- 所有查询：同时替换 `{CURR_START}`/`{CURR_END}` 与 `{BASE_START}`/`{BASE_END}`
+- 所有查询：替换 `{CURR_PARTITION_PREDICATE}` 与 `{BASE_PARTITION_PREDICATE}`。
+  - 日模式：`ds BETWEEN '{START_DS}' AND '{END_DS}'`
+  - 小时模式：`((ds > '{START_DS}' OR (ds = '{START_DS}' AND hh >= '{START_HH}')) AND (ds < '{END_DS}' OR (ds = '{END_DS}' AND hh < '{END_HH}')))`
 - 所有查询结果：必须包含 `period`，值只能为 `CURR` 或 `BASE`
 
 - 将按字典序去重后的标准应用名安全替换到 `{APP_LIST}`。结果必须含 `app_name`，不得在本 skill 外再拼接项目维度。
@@ -105,7 +119,7 @@ version: 1.9.0
 
 | ID | 说明 |
 |----|------|
-| A | 当前/基线每日总量，按 `period, ds` 分组 |
+| A | 当前/基线总量；日模式按 `period, ds`，小时模式按 `period, ds, hh` 分组 |
 | B | 当前/基线 event_type 分布，按 `period, event_type, error_type` 分组 |
 
 ## Step 3：生成合并明细查询 SQL
@@ -129,7 +143,7 @@ version: 1.9.0
 
 示例：`C1`、`C2`。项目范围统一通过 `{APP_LIST}` 限定目标应用，并以 `app_name, period` 为聚合和 Top N 分区维度。
 
-PERIOD：`CURR` 用 `{CURR_START}/{CURR_END}`，`BASE` 用 `{BASE_START}/{BASE_END}`。
+PERIOD：`CURR` 用 `{CURR_PARTITION_PREDICATE}`，`BASE` 用 `{BASE_PARTITION_PREDICATE}`。
 
 round1 与 round4 必须在本次调用中一起写入查询计划；每条查询的 CURR/BASE 结果通过 `period` 区分。
 
@@ -151,13 +165,14 @@ round1 与 round4 必须在本次调用中一起写入查询计划；每条查�
 ```yaml
 app_names: ["search-frontend", "product-editor-frontend"]
 date_vars:
-  CURR_START: "20260610"
-  CURR_END: "20260610"
-  BASE_START: "20260609"
-  BASE_END: "20260609"
-  CURR_DAYS: 1
-  BASE_DAYS: 1
-  CURR_START_FMT: "6/10"
+  time_granularity: hour
+  partition_timezone: "GMT+1"
+  CURR_START_AT: "2026-06-10T08:00:00+01:00"
+  CURR_END_AT: "2026-06-11T08:00:00+01:00"
+  BASE_START_AT: "2026-06-09T08:00:00+01:00"
+  BASE_END_AT: "2026-06-10T08:00:00+01:00"
+  CURR_HOURS: 24
+  BASE_HOURS: 24
   # ...
 is_weekly_report: false
 comparison_id: "20260610_vs_20260609"
@@ -189,5 +204,5 @@ queries:
 
 - **自然周边界**：「上周」指完整自然周，不是最近 7 天
 - **跨月天数**：必须用日期对象相减，不能字符串相减
-- **Group C 日期**：每条 C 模板同时使用 `{CURR_START}`/`{CURR_END}` 与 `{BASE_START}`/`{BASE_END}`，不得生成单周期 SQL
-- **MissingPartitionSpec**：生成的 SQL 必须包含 `ds BETWEEN` 分区条件
+- **Group C 分区**：每条 C 模板同时使用 CURR 与 BASE 分区谓词，不得生成单周期 SQL
+- **MissingPartitionSpec**：生成的 SQL 必须包含 `ds` 分区条件；小时模式还必须包含 `hh` 边界

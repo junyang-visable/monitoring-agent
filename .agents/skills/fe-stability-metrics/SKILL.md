@@ -1,7 +1,7 @@
 ---
 name: fe-stability-metrics
 description: 解析稳定性查询结果，计算环比与治理优先级，输出含具体错误突增与处理建议的 analysis.json。
-version: 1.5.0
+version: 1.6.0
 ---
 
 # 稳定性数据分析
@@ -21,8 +21,8 @@ version: 1.5.0
 
 ## 输入
 
-- Phase 1「fe-stability-query」输出的日期变量、`IS_WEEKLY_REPORT`、`app_names`
-- Phase 1 输出的 `STABILITY_WINDOW_DAYS`、`STABLE_THROUGH`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、`data_as_of`
+- Phase 1「fe-stability-query」输出的日期/小时变量、`time_granularity`、`partition_timezone`、`IS_WEEKLY_REPORT`、`app_names`
+- Phase 1 输出的日或小时稳定窗口参数、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、`data_as_of`
 - Phase 2 全部查询结果（**必须含 Group C**：C1/C2/C3/C4/C5/C6 各 1 条合并查询，结果必须含 `period=CURR|BASE`，且只限当前范围）
 - `{OUTPUT_DIR}`
 
@@ -40,10 +40,10 @@ version: 1.5.0
 
 | 模块 | 来源 |
 |------|------|
-| `global.totals` / `daily_breakdown` | A（按 `period` 拆分） |
+| `global.totals` / `daily_breakdown` / `hourly_breakdown` | A（按 `period` 拆分） |
 | `global.metrics` | B（按 `period` 拆分） |
 
-按 `app_name` 拆分 A/B 结果，为每个传入应用构建 `by_app`，并将 `global` 仅作为选中应用的合计。单项目的 `app_names` 也遵守此规则。不得推断或填充未传入的应用数据。
+按 `app_name` 拆分 A/B 结果，为每个传入应用构建 `by_app`，并将 `global` 仅作为选中应用的合计。`time_granularity=hour` 时 A 必须含 `ds,hh`，生成 `hourly_breakdown`，并可由其汇总 `daily_breakdown`。不得推断或填充未传入的应用数据。
 
 ---
 
@@ -58,7 +58,7 @@ version: 1.5.0
 按 [references/message-analysis.md](references/message-analysis.md) 处理 Group C：
 
 1. 先按 `app_name` 再按 `period` 拆分每条 `{C_ID}` 合并查询结果（PERIOD = CURR | BASE）
-2. 计算每条 `ErrorDetailItem` 的 daily、change、is_spike、priority、impact_score
+2. 计算每条 `ErrorDetailItem` 的 rate、change、is_spike、priority、impact_score；`rate_unit` 取 `day` 或 `hour`
 3. 生成 `root_cause_hint` 与 `recommendation`
 4. 填充：
    - `issues.*.details[]`；白屏页面分布写入对应 `white_screen` 明细的 `extra.page_breakdown`；填充对应的 `issues.*.by_app.{app_name}`
@@ -84,11 +84,11 @@ version: 1.5.0
 
 `meta` 必须包含：
 
-- `schema_version: "1.3"`
+- `schema_version: "1.4"`
 - `comparison_id`、`today`、`generated_at`（ISO8601）
-- 全部日期变量 + `is_weekly_report`
+- 全部日期/小时变量、`time_granularity`、`partition_timezone` 和 `is_weekly_report`
 - `output_dir`（绝对路径）
-- `stability_window_days`、`stable_through`、`includes_unstable_data`、`is_provisional`
+- 日或小时稳定窗口参数、`includes_unstable_data`、`is_provisional`
 - `data_as_of`（ISO8601，实际查询或分析时间）
 - `app_names` 和 `scope_key`
 

@@ -88,7 +88,7 @@ fe-stability-analysis（编排器）
 
 ## Phase 1：fe-stability-query（请求解析与查询计划）
 
-完成项目映射后，调用 **`fe-stability-query`**，将用户的时间范围意图及非空 `app_names` 传入，一次性生成包含查询参数、缓存标识、round1 和 round4 SQL 的完整查询计划。
+完成项目映射后，调用 **`fe-stability-query`**，将用户的时间范围意图、非空 `app_names` 及可选 `time_granularity`、`partition_timezone`、`stability_window_hours` 传入，一次性生成包含查询参数、缓存标识、round1 和 round4 SQL 的完整查询计划。
 
 **强制**：每次请求必须基于**系统当天**重新生成查询计划，并输出计划摘要（含查询范围、对比周期、`comparison_id`、`includes_unstable_data`、`is_provisional`）。
 
@@ -123,7 +123,7 @@ fe-stability-analysis（编排器）
 
 调用 **`fe-stability-metrics`**，传入：
 
-- Phase 1「fe-stability-query」输出的日期变量、`IS_WEEKLY_REPORT`、`app_names`
+- Phase 1「fe-stability-query」输出的日期/小时变量、`time_granularity`、`partition_timezone`、`IS_WEEKLY_REPORT`、`app_names`
 - Phase 2 全部查询结果
 - `{OUTPUT_DIR}`
 

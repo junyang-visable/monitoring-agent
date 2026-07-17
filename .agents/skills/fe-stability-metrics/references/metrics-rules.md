@@ -1,12 +1,14 @@
 # 指标计算与判定规则
 
-## 日均归一化
+## 单位归一化
 
 ```
-基线/天 = BASE 总量 / BASE_DAYS
-当前/天 = CURR 总量 / CURR_DAYS
-变化%   = (当前/天 - 基线/天) / 基线/天 × 100%
+基线 rate = BASE 总量 / BASE_UNITS
+当前 rate = CURR 总量 / CURR_UNITS
+变化%     = (当前 rate - 基线 rate) / 基线 rate × 100%
 ```
+
+`time_granularity=day` 时 `rate_unit=day`、`BASE_UNITS=BASE_DAYS`；`time_granularity=hour` 时 `rate_unit=hour`、`BASE_UNITS=BASE_HOURS`。小时模式的 P0/P1/P2 阈值仍以 `rate × 24` 的日等价值判定，避免同一错误仅因查询粒度变化而改变优先级。
 
 基线为 0 时：变化% 记为 `null`，趋势记为 `→ 无法对比`，报告中注明「基线无数据」。
 

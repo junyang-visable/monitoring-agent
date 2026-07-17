@@ -20,8 +20,12 @@ projects:
       # Optional override. Omit when the Datadog service equals app_name.
       service: "visable-dev/search-frontend"
     stability_sdk:
-      enabled: false
+      enabled: true
       output_mode: analysis_only
+      time_granularity: hour
+      # The ETL writes ds/hh after converting source time from GMT+8 to GMT+1.
+      partition_timezone: GMT+1
+      stability_window_hours: 1
     sentry:
       enabled: true
       organization: "visable-gmbh"

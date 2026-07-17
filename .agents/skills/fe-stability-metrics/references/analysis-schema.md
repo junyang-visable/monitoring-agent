@@ -2,13 +2,15 @@
 
 `fe-stability-metrics` 输出、`fe-stability-report-writer` 输入的唯一契约。
 
-**当前版本**：`1.3`（新增批量项目范围与范围隔离文件名）
+**当前版本**：`1.4`（新增小时粒度、分区时区与单位速率）
 
 ## comparison_id 生成规则
 
 ```
-若 CURR_START = CURR_END 且 BASE_START = BASE_END:
+若 time_granularity = day 且 CURR_START = CURR_END 且 BASE_START = BASE_END:
   comparison_id = "{CURR_END}_vs_{BASE_END}"
+若 time_granularity = hour:
+  comparison_id = "{CURR_START_AT}_to_{CURR_END_AT}_vs_{BASE_START_AT}_to_{BASE_END_AT}"
 否则:
   comparison_id = "{CURR_START}-{CURR_END}_vs_{BASE_START}-{BASE_END}"
 ```
@@ -23,17 +25,23 @@
 
 ```yaml
 meta:
-  schema_version: "1.3"
+  schema_version: "1.4"
   comparison_id: string
   today: yyyyMMdd                 # 跑批当日
-  stability_window_days: number   # 最近仍可能回补的数据日数量
-  stable_through: yyyyMMdd        # 已进入稳定窗口的数据截止日
+  stability_window_days: number | null
+  stability_window_hours: number | null
+  stable_through: yyyyMMdd | null
+  stable_through_at: ISO8601 | null
   includes_unstable_data: boolean # CURR 或 BASE 是否覆盖不稳定数据日
   is_provisional: boolean         # 是否为临时结果
   data_as_of: string              # ISO8601，实际查询/分析时间
   generated_at: string            # ISO8601，写入 analysis.json 的时刻
-  curr_start / curr_end / base_start / base_end: yyyyMMdd
-  curr_days / base_days: number
+  time_granularity: day | hour
+  partition_timezone: string
+  curr_start / curr_end / base_start / base_end: yyyyMMdd # 日模式
+  curr_days / base_days: number                           # 日模式
+  curr_start_at / curr_end_at / base_start_at / base_end_at: ISO8601 # 小时模式，半开区间
+  curr_hours / base_hours: number                         # 小时模式
   curr_start_fmt / curr_end_fmt / base_start_fmt / base_end_fmt: string
   is_weekly_report: boolean
   scope_key: string                # apps-<sorted-app-names 的 SHA-256 前 12 位>
@@ -41,8 +49,9 @@ meta:
   output_dir: string
 
 global:
-  totals: { base_total, curr_total, base_daily, curr_daily, change_pct, trend }
+  totals: { base_total, curr_total, base_rate, curr_rate, rate_unit, change_pct, trend }
   daily_breakdown: { base: [{ds, count}], curr: [{ds, count}] }
+  hourly_breakdown: { base: [{ds, hh, count}], curr: [{ds, hh, count}] }
   peak_days: [{ ds, count, note }]
   metrics: [ MetricItem ]
   summary_insight: string
@@ -82,8 +91,9 @@ app_comparison:
 key: "script_error:resource_load_failed"
 base_total: number
 curr_total: number
-base_daily: number
-curr_daily: number
+base_rate: number
+curr_rate: number
+rate_unit: day | hour
 change_pct: number | null
 trend: string
 title_suffix: string
@@ -99,8 +109,9 @@ key: string                     # resource_url 或 message 原文
 display: string                 # 报告展示用短文本
 base_count: number
 curr_count: number
-base_daily: number
-curr_daily: number
+base_rate: number
+curr_rate: number
+rate_unit: day | hour
 change_pct: number | null
 trend: string
 is_new: boolean

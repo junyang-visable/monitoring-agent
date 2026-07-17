@@ -29,7 +29,7 @@ C6 为必选，用于白屏 page 分布，写入对应 `ErrorDetailItem.extra.pa
 
 1. 从同一条 E 查询结果中读取 `period=CURR` 的 `count`
 2. 从同一条 E 查询结果中读取 `period=BASE` 的 `count`（无则 0）
-3. 计算 `base_daily` / `curr_daily` / `change_pct` / `trend`（公式同 metrics-rules）
+3. 计算 `base_rate` / `curr_rate` / `rate_unit` / `change_pct` / `trend`（公式同 metrics-rules）
 4. 生成 `display`：URL 取 path 末段或域名；message 取前 120 字
 
 ## 突增识别（is_spike）
@@ -38,10 +38,10 @@ C6 为必选，用于白屏 page 分布，写入对应 `ErrorDetailItem.extra.pa
 
 | 类型 | 条件 |
 |------|------|
-| 环比突增 | `change_pct >= 100%` 且 `curr_daily >= 10` |
-| 新出现 | `base_count = 0` 且 `curr_daily >= 5` |
-| 量级突增 | `curr_daily >= 100` 且 `change_pct >= 50%` |
-| 绝对量大且恶化 | `curr_daily >= 500` 且 `change_pct >= 20%` |
+| 环比突增 | `change_pct >= 100%` 且日等价值 `curr_rate × rate_unit_factor >= 10` |
+| 新出现 | `base_count = 0` 且日等价值 `curr_rate × rate_unit_factor >= 5` |
+| 量级突增 | 日等价值 `curr_rate × rate_unit_factor >= 100` 且 `change_pct >= 50%` |
+| 绝对量大且恶化 | 日等价值 `curr_rate × rate_unit_factor >= 500` 且 `change_pct >= 20%` |
 
 `is_new = (base_count == 0 && curr_count > 0)`
 
@@ -51,8 +51,8 @@ C6 为必选，用于白屏 page 分布，写入对应 `ErrorDetailItem.extra.pa
 
 | 优先级 | 条件 |
 |--------|------|
-| **P0** | `is_spike` 且 `curr_daily >= 100`；或 API 403/401/5xx 且 `curr_daily >= 20`；或白屏 dom_empty 相关且 `curr_daily >= 10` |
-| **P1** | `is_spike` 且 `curr_daily >= 10`；或 `curr_daily >= 50` 且 `change_pct >= 50%` |
+| **P0** | `is_spike` 且日等价值 >= 100；或 API 403/401/5xx 且日等价值 >= 20；或白屏 dom_empty 相关且日等价值 >= 10 |
+| **P1** | `is_spike` 且日等价值 >= 10；或日等价值 >= 50 且 `change_pct >= 50%` |
 | **P2** | 其余有 CURR 数据的条目 |
 
 ## 影响力排序（impact_score）
@@ -60,8 +60,8 @@ C6 为必选，用于白屏 page 分布，写入对应 `ErrorDetailItem.extra.pa
 用于 `priority_actions` 排序：
 
 ```
-impact_score = curr_daily × (1 + max(change_pct, 0) / 100)
-若 priority = P0 → × 3
+impact_score = 日等价值 × (1 + max(change_pct, 0) / 100)
+其中 `rate_unit_factor=1`（day）或 `24`（hour）；若 priority = P0 → × 3
 若 priority = P1 → × 2
 若 is_new → × 1.5
 ```

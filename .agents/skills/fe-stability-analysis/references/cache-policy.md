@@ -39,7 +39,7 @@ Phase 1 由 `fe-stability-query` 计算最近仍可能回补的数据日。默�
 {OUTPUT_DIR}/frontend-stability-apps-{scope_key}-{comparison_id}.md
 ```
 
-3. `analysis.json` 中 `meta.schema_version=\"1.3\"`，且 `meta.comparison_id`、`meta.curr_start/end`、`meta.base_start/end`、`meta.scope_key`、`meta.app_names`、`meta.stable_through` 与 Phase 1 一致
+3. `analysis.json` 中 `meta.schema_version=\"1.4\"`，且 `meta.comparison_id`、日期或小时范围、`meta.time_granularity`、`meta.partition_timezone`、`meta.scope_key`、`meta.app_names`、稳定窗口参数与 Phase 1 一致
 
 → **跳过后续 Phase**，直接返回缓存结果，并注明「命中历史缓存，未重新查数」。
 

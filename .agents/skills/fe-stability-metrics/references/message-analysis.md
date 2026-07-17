@@ -91,7 +91,7 @@ impact_score = 日等价值 × (1 + max(change_pct, 0) / 100)
 每条写入 `ErrorDetailItem`（见 analysis-schema.md），并汇总：
 
 - `issues.{category}.details[]` — 该类别下全部明细（按 impact_score 降序，最多 20 条/类）
-- `issues.{category}.by_app.{app}[]` — 写入对应应用
+- 项目 JSON 的 `issues.{category}.details[]` — 写入对应应用的独立明细
 - `priority_actions[]` — 全域 TOP 15 待处理项
 - `spike_alerts[]` — 全部 `is_spike=true`（最多 30 条）
 

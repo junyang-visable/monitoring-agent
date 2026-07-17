@@ -1,50 +1,73 @@
 # 结果缓存策略
 
-编排器在 **Phase 1「fe-stability-query」完成后**、进入 Phase 2 之前执行本检查。
+编排器在 **Phase 1「fe-stability-query」完成后**、进入 Phase 2 前执行本检查。缓存只保存索引，绝不复制总览或项目 JSON。
 
-## 何时必须重新查询（禁止读缓存）
+## 缓存索引
 
-满足**任一**条件则 **完整执行 Phase 2 → 3 → 4**：
+唯一缓存索引文件为 `{CACHE_DIR}/index.json`；`{CACHE_DIR}` 默认是 `{git_root}/artifacts/fe-stability-analysis/.cache/`，无法识别 git 根目录时使用 `{cwd}/artifacts/fe-stability-analysis/.cache/`。环境变量 `FE_STABILITY_CACHE_DIR` 可覆盖该目录。
 
-1. **`includes_unstable_data = true`**：范围覆盖最近仍可能回补的数据日
-2. **缓存文件不完整**：`output_mode=analysis_only` 时缺少 `analysis.json`；`output_mode=report` 时缺少 `analysis.json` 或唯一 Markdown 报告
-3. **缓存与本次日期或范围不一致**：`analysis.json` 内 `meta` 与 Phase 1 计算的 CURR/BASE、`scope_key`、`app_names` 不匹配
-4. **用户明确要求重新跑数 / 刷新 / 最新数据**
+Phase 1 对下列字段按固定键顺序序列化后计算 SHA-256，取前 24 位作为 `cache_key`：
+
+- `schema_version`（固定 `2.0`）、排序后的 `app_names`
+- `time_granularity`、`partition_timezone`
+- CURR 与 BASE 的完整日或小时半开区间
+- `stability_window_days`、`stability_window_hours`
+
+`run_id`、`output_dir`、`output_mode`、`generated_at` 不参与 `cache_key`。因此每次无需遍历 `.cache`，只读取一个索引文件并按键查找：
+
+```text
+{CACHE_DIR}/index.json → entries[{cache_key}]
+```
+
+索引结构：
+
+```json
+{
+  "index_version": "1",
+  "entries": {
+    "<cache_key>": {
+      "key_input": { "app_names": [], "time_range": {}, "time_granularity": "hour", "partition_timezone": "GMT+1" },
+      "source_run_id": "20260717_160844",
+      "source_output_dir": "/abs/.../artifacts/fe-stability-analysis/20260717_160844",
+      "overview_path": "/abs/.../overview.json",
+      "project_paths": { "search-frontend": "/abs/.../search-frontend.json" },
+      "meta_fingerprint": "<sha256>",
+      "created_at": "ISO8601"
+    }
+  }
+}
+```
+
+## 何时必须重新查询（禁止读或写缓存）
+
+满足任一条件则执行 **Phase 2 → 3**：
+
+1. `includes_unstable_data = true` 或 `is_provisional = true`
+2. 用户明确要求重新跑数、刷新或最新数据
+3. `{CACHE_DIR}/index.json` 不存在、不可解析，或 `entries[cache_key]` 不存在、其 `key_input` 不一致
+4. 索引未覆盖全部 `app_names`，或其 `overview_path` / 任一 `project_paths[app]` 不存在、不可读
+5. 目标 JSON 的 `meta.schema_version` 不为 `"2.0"`，或 `meta_fingerprint`、范围、项目集合、粒度、分区时区、稳定窗口与本次 Phase 1 不一致
 
 ### 数据稳定窗口判定
 
-Phase 1 由 `fe-stability-query` 计算最近仍可能回补的数据日。默认 `stability_window_days=1`，因此今天和昨天都属于不稳定范围。
+Phase 1 计算 `includes_unstable_data` 与 `is_provisional`。覆盖稳定窗口的数据永远重查；例如默认过去 24 小时包含最近完成分区，通常不可缓存。仅完全早于稳定窗口的固定历史区间可复用。
 
-| 场景 | includes_unstable_data | 是否可缓存 |
-|------|------------------------|-----------|
-| 过去一周（滚动 7 天，含今天） | true | **必须重查** |
-| 上个自然周 vs 上上个自然周 | false | 可缓存 |
-| 本周（周一至今天） | true | **必须重查** |
-| 含稳定窗口内的数据 | true | **必须重查** |
-| 早于稳定窗口的数据 | false | 可按缓存完整性和 meta 命中缓存 |
+## 缓存命中与写入
 
-## 何时允许返回缓存
+命中有效索引时：
 
-**同时**满足：
+- `analysis_only`：跳过 Phase 2–3，返回索引指向的总览和项目 JSON 绝对路径，并注明源 `run_id`。
+- `report`：跳过 Phase 2–3，使用索引指向的 JSON 执行 Phase 4，在**当前** `{OUTPUT_DIR}` 写入 `report.md`；不得复制 JSON。
 
-1. `includes_unstable_data = false`
-2. 当前模式要求的缓存文件存在且可读：
+Phase 3 成功写完 `{OUTPUT_DIR}/overview.json` 与所有 `{app_name}.json` 后：
 
-```
-# output_mode=analysis_only
-{OUTPUT_DIR}/analysis-{scope_key}-{comparison_id}.json
+1. 仅当数据稳定且未要求刷新时，计算源文件 `meta_fingerprint`。
+2. 对 `{CACHE_DIR}/index.json` 获取短暂独占锁，重新读取最新内容，仅更新 `entries[cache_key]` 为当前 `run_id` 的绝对路径映射。
+3. 写入临时文件后原子替换 `{CACHE_DIR}/index.json`，再释放锁；临时文件完成后必须删除。
+4. 不稳定或临时数据不得创建或覆盖索引条目。
 
-# output_mode=report
-{OUTPUT_DIR}/analysis-{scope_key}-{comparison_id}.json
-{OUTPUT_DIR}/frontend-stability-apps-{scope_key}-{comparison_id}.md
-```
-
-3. `analysis.json` 中 `meta.schema_version=\"1.4\"`，且 `meta.comparison_id`、日期或小时范围、`meta.time_granularity`、`meta.partition_timezone`、`meta.scope_key`、`meta.app_names`、稳定窗口参数与 Phase 1 一致
-
-→ **跳过后续 Phase**，直接返回缓存结果，并注明「命中历史缓存，未重新查数」。
+清理任何 `artifacts/fe-stability-analysis/<run_id>/` 前，必须检查 `index.json` 的全部 `entries.*.source_run_id`；仍被任一条目引用的 run 不得删除。
 
 ## Phase 1「fe-stability-query」不可跳过
 
-无论是否命中缓存，**每次请求都必须执行 Phase 1「fe-stability-query」**（解析项目范围与时间意图，基于今天生成计划参数和缓存标识）。
-
-命中缓存时不执行查询计划中的 SQL；计划参数、`comparison_id`、`includes_unstable_data` 与稳定窗口参数仍必须生成并校验。
+每次请求都必须执行 Phase 1，重新生成范围、稳定性判定、`cache_key` 与索引路径。命中缓存时不执行 SQL，但仍必须完整校验索引和源文件元数据。

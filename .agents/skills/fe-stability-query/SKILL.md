@@ -1,7 +1,7 @@
 ---
 name: fe-stability-query
 description: 接收已解析的项目范围与时间意图，生成包含查询参数、缓存标识及 ODPS SQL 批次的前端稳定性查询计划。
-version: 2.0.0
+version: 2.2.0
 ---
 
 # 查询计划生成
@@ -95,7 +95,7 @@ version: 2.0.0
    > 本次分析：今天 {TODAY}；CURR {CURR_START}–{CURR_END}（{CURR_DAYS} 天）vs BASE {BASE_START}–{BASE_END}（{BASE_DAYS} 天）；comparison_id=`{COMPARISON_ID}`；includes_unstable_data={INCLUDES_UNSTABLE_DATA}；is_provisional={IS_PROVISIONAL}
    小时模式格式：
    > 本次分析：分区时区 {PARTITION_TIMEZONE}；CURR [{CURR_START_AT}, {CURR_END_AT})（{CURR_HOURS} 小时）vs BASE [{BASE_START_AT}, {BASE_END_AT})（{BASE_HOURS} 小时）；comparison_id=`{COMPARISON_ID}`；includes_unstable_data={INCLUDES_UNSTABLE_DATA}；is_provisional={IS_PROVISIONAL}
-4. 将 `COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、粒度及稳定窗口参数、`DATA_AS_OF` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 判断。
+4. 将 `COMPARISON_ID`、CURR/BASE 完整区间、排序后的 `app_names`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、粒度及稳定窗口参数、`DATA_AS_OF` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 计算 `cache_key`。
 5. `comparison_id` 规则见 [fe-stability-metrics/references/analysis-schema.md](../fe-stability-metrics/references/analysis-schema.md)。
 
 ---

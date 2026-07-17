@@ -1,8 +1,8 @@
-# analysis.json Schema
+# 稳定性分析 JSON Schema
 
 `fe-stability-metrics` 输出、`fe-stability-report-writer` 输入的唯一契约。
 
-**当前版本**：`1.4`（新增小时粒度、分区时区与单位速率）
+**当前版本**：`2.0`（总览与项目分析文件拆分）
 
 ## comparison_id 生成规则
 
@@ -18,15 +18,18 @@
 ## 输出文件
 
 ```
-{OUTPUT_DIR}/analysis-{scope_key}-{comparison_id}.json
+{OUTPUT_DIR}/overview.json
+{OUTPUT_DIR}/{app_name}.json
 ```
 
 ## 顶层结构
 
 ```yaml
 meta:
-  schema_version: "1.4"
+  schema_version: "2.0"
   comparison_id: string
+  cache_key: string | null        # Phase 1 缓存索引键
+  run_id: string                  # 输出目录名
   today: yyyyMMdd                 # 跑批当日
   stability_window_days: number | null
   stability_window_hours: number | null
@@ -35,7 +38,7 @@ meta:
   includes_unstable_data: boolean # CURR 或 BASE 是否覆盖不稳定数据日
   is_provisional: boolean         # 是否为临时结果
   data_as_of: string              # ISO8601，实际查询/分析时间
-  generated_at: string            # ISO8601，写入 analysis.json 的时刻
+  generated_at: string            # ISO8601，写入分析文件的时刻
   time_granularity: day | hour
   partition_timezone: string
   curr_start / curr_end / base_start / base_end: yyyyMMdd # 日模式
@@ -46,6 +49,8 @@ meta:
   is_weekly_report: boolean
   scope_key: string                # apps-<sorted-app-names 的 SHA-256 前 12 位>
   app_names: [string]              # 传入或默认解析出的去重标准项目名
+  project_files: { app_name: "{app_name}.json" } # 仅总览
+  app_name: string | null          # 仅项目 JSON；总览为 null
   output_dir: string
 
 global:
@@ -56,21 +61,11 @@ global:
   metrics: [ MetricItem ]
   summary_insight: string
 
-by_app:                           # 仅包含请求范围内项目
-  {app_name}:
-    desc: string
-    totals: { ... }
-    daily: [{ ds, count }]
-    metrics: [ MetricItem ]
-    metric_share: { "event:error": 0.96 }
-
 issues:
   resource_load_failed / api_errors / white_screen / js_runtime / ssr / custom:
     title_suffix: string
     global: MetricItem
-    top_items: [{ key, count, note }]          # 兼容旧字段，取 details TOP
     details: [ ErrorDetailItem ]               # 按 impact_score 降序
-    by_app: { {app_name}: [ ErrorDetailItem ] }
     insight: string
     governance: string
     suggestions: [ string ]
@@ -84,6 +79,31 @@ governance:
 app_comparison:
   - { app, curr_total, change_pct, trend, drivers, improved[], worsened[], top_priority }
 ```
+
+总览包含跨项目汇总字段 `global`、`app_comparison`、跨项目 `priority_actions` 与 `issues.*.details`。
+
+每个项目 JSON 的顶层结构为：
+
+```yaml
+meta: { schema_version: "2.0", app_name: string, ... }
+totals: { base_total, curr_total, base_rate, curr_rate, rate_unit, change_pct, trend }
+daily_breakdown: { base: [{ds, count}], curr: [{ds, count}] }
+hourly_breakdown: { base: [{ds, hh, count}], curr: [{ds, hh, count}] }
+metrics: [ MetricItem ]
+issues:                         # 与总览相同的类别键，但仅含本项目明细
+  resource_load_failed:
+    title_suffix: string
+    global: MetricItem
+    details: [ ErrorDetailItem ]
+    insight: string
+    governance: string
+    suggestions: [ string ]
+priority_actions: [ ErrorDetailItem ]
+spike_alerts: [ ErrorDetailItem ]
+governance: [ { priority, title, metric, change_pct, action, related_errors[] } ]
+```
+
+项目 JSON 不含 `global`、`app_comparison`、`project_files` 或任何 `by_app`；`details` 是唯一的错误明细列表，按 `impact_score` 降序；不得输出 `top_items`。
 
 ## MetricItem
 

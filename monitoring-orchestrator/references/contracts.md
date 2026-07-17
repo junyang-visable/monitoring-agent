@@ -46,6 +46,13 @@ report.json
 
 Keep `time_range` in the report body rather than duplicating it in the filename.
 
+The shared Stability SDK analysis is a run artifact stored alongside (not within) Monitoring artifacts. Use the same `run_id`:
+
+```text
+artifacts/fe-stability-analysis/<run_id>/overview.json
+artifacts/fe-stability-analysis/<run_id>/<app_name>.json
+```
+
 Datadog, Stability SDK, and Sentry share the resolved `time_range`. Sentry compares that current window with the immediately preceding, equal-duration baseline. `delta` is current minus baseline; percentage delta is omitted when baseline is zero.
 
 Stability SDK receives the equivalent calendar-day intent. Its data-stability window remains governed by `fe-stability-analysis`.

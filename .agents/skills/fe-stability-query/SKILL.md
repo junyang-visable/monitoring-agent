@@ -1,7 +1,7 @@
 ---
 name: fe-stability-query
 description: 接收已解析的项目范围与时间意图，生成包含查询参数、缓存标识及 ODPS SQL 批次的前端稳定性查询计划。
-version: 1.5.0
+version: 1.6.0
 ---
 
 # 查询计划生成
@@ -58,15 +58,20 @@ version: 1.5.0
 | `{IS_WEEKLY_REPORT}` | boolean | 是否周报 |
 | `{TODAY}` | yyyyMMdd | 系统当天 |
 | `{COMPARISON_ID}` | string | 按 schema 规则预计算 |
-| `{INCLUDES_TODAY}` | boolean | CURR 或 BASE 是否包含 TODAY |
+| `{STABILITY_WINDOW_DAYS}` | integer | 最近仍可能回补的数据日数量，默认 `1` |
+| `{STABLE_THROUGH}` | yyyyMMdd | 已进入稳定窗口的数据截止日 |
+| `{INCLUDES_UNSTABLE_DATA}` | boolean | CURR 或 BASE 是否覆盖稳定窗口内的数据 |
+| `{IS_PROVISIONAL}` | boolean | 是否应标记为临时结果 |
+| `{DATA_AS_OF}` | ISO8601 | 本次查询计划生成时间 |
 
-`includes_today` 计算：
+数据稳定窗口规则：
 
-```
-INCLUDES_TODAY =
-  (CURR_START <= TODAY <= CURR_END)
-  OR (BASE_START <= TODAY <= BASE_END)
-```
+- `STABILITY_WINDOW_DAYS = 1`；最近一个已完成自然日仍可能有迟到或回补数据。
+- `UNSTABLE_START = TODAY - STABILITY_WINDOW_DAYS`。
+- `STABLE_THROUGH = UNSTABLE_START - 1 day`。
+- `INCLUDES_UNSTABLE_DATA`：CURR 或 BASE 的任一日期大于等于 `UNSTABLE_START`。
+- `IS_PROVISIONAL = INCLUDES_UNSTABLE_DATA`。
+- 查询范围覆盖不稳定窗口时必须重新查数，且不得命中缓存。
 
 ---
 
@@ -75,8 +80,8 @@ INCLUDES_TODAY =
 1. **每次 Phase 1 必须重新计算**，不得引用会话记忆、不得假设「与上次相同」。
 2. **今天**取系统当前日期（非用户消息时间戳、非上次跑批日期）。
 3. 参数构建完成后输出计划摘要，格式：
-   > 本次分析：今天 {TODAY}；CURR {CURR_START}–{CURR_END}（{CURR_DAYS} 天）vs BASE {BASE_START}–{BASE_END}（{BASE_DAYS} 天）；comparison_id=`{COMPARISON_ID}`；includes_today={INCLUDES_TODAY}
-4. 将 `COMPARISON_ID`、`INCLUDES_TODAY`、`TODAY` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 判断。
+   > 本次分析：今天 {TODAY}；CURR {CURR_START}–{CURR_END}（{CURR_DAYS} 天）vs BASE {BASE_START}–{BASE_END}（{BASE_DAYS} 天）；comparison_id=`{COMPARISON_ID}`；includes_unstable_data={INCLUDES_UNSTABLE_DATA}；is_provisional={IS_PROVISIONAL}
+4. 将 `COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、`STABILITY_WINDOW_DAYS`、`STABLE_THROUGH`、`DATA_AS_OF`、`TODAY` 一并交给编排器，供 [cache-policy.md](../fe-stability-analysis/references/cache-policy.md) 判断。
 5. `comparison_id` 规则见 [fe-stability-metrics/references/analysis-schema.md](../fe-stability-metrics/references/analysis-schema.md)。
 
 ---
@@ -141,7 +146,7 @@ round1 与 round4 必须在本次调用中一起写入查询计划；每条查�
 向编排器返回一个完整查询计划：
 
 1. **计划摘要**：查询范围 + `当前 6/10–6/10（1 天）vs 基线 6/9–6/9（1 天）` + `period=CURR|BASE`
-2. **计划参数**：`scope`、可选 `app_name`、全部日期变量、`IS_WEEKLY_REPORT`、`COMPARISON_ID`、`INCLUDES_TODAY`
+2. **计划参数**：`scope`、可选 `app_name`、全部日期变量、`IS_WEEKLY_REPORT`、`COMPARISON_ID`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`
 3. **SQL 批次列表**，每条包含：
    - `id`：如 `A`、`C1`
    - `round`：1 或 4；每个 id 只出现一次
@@ -163,7 +168,11 @@ date_vars:
   # ...
 is_weekly_report: false
 comparison_id: "20260610_vs_20260609"
-includes_today: false
+stability_window_days: 1
+stable_through: "20260608"
+includes_unstable_data: true
+is_provisional: true
+data_as_of: "2026-06-10T09:30:00Z"
 queries:
   round1:
     - id: A

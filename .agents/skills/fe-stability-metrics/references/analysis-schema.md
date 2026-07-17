@@ -2,7 +2,7 @@
 
 `fe-stability-metrics` 输出、`fe-stability-report-writer` 输入的唯一契约。
 
-**当前版本**：`1.1`（新增具体错误信息分析字段）
+**当前版本**：`1.2`（新增数据稳定窗口与临时结果字段）
 
 ## comparison_id 生成规则
 
@@ -23,10 +23,14 @@
 
 ```yaml
 meta:
-  schema_version: "1.1"
+  schema_version: "1.2"
   comparison_id: string
   today: yyyyMMdd                 # 跑批当日
-  includes_today: boolean         # CURR 或 BASE 是否含 today
+  stability_window_days: number   # 最近仍可能回补的数据日数量
+  stable_through: yyyyMMdd        # 已进入稳定窗口的数据截止日
+  includes_unstable_data: boolean # CURR 或 BASE 是否覆盖不稳定数据日
+  is_provisional: boolean         # 是否为临时结果
+  data_as_of: string              # ISO8601，实际查询/分析时间
   generated_at: string            # ISO8601，写入 analysis.json 的时刻
   curr_start / curr_end / base_start / base_end: yyyyMMdd
   curr_days / base_days: number

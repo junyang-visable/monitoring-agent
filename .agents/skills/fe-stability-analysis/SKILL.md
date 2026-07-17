@@ -82,9 +82,9 @@ fe-stability-analysis（编排器）
 
 完成项目映射后，调用 **`fe-stability-query`**，将用户的时间范围意图及 `scope`（`global` 或 `app` + `app_name`）传入，一次性生成包含查询参数、缓存标识、round1 和 round4 SQL 的完整查询计划。
 
-**强制**：每次请求必须基于**系统当天**重新生成查询计划，并输出计划摘要（含查询范围、对比周期、`comparison_id`、`includes_today`）。
+**强制**：每次请求必须基于**系统当天**重新生成查询计划，并输出计划摘要（含查询范围、对比周期、`comparison_id`、`includes_unstable_data`、`is_provisional`）。
 
-**等待返回**：完整查询计划（查询范围、日期变量、`COMPARISON_ID`、`INCLUDES_TODAY`、`IS_WEEKLY_REPORT`、round1 与 round4 SQL 批次；每条结果含 `period=CURR|BASE`）。
+**等待返回**：完整查询计划（查询范围、日期变量、`COMPARISON_ID`、`IS_WEEKLY_REPORT`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、round1 与 round4 SQL 批次；每条结果含 `period=CURR|BASE`）。
 
 ---
 
@@ -92,8 +92,8 @@ fe-stability-analysis（编排器）
 
 按 [references/cache-policy.md](references/cache-policy.md) 与 [orchestration.md](references/orchestration.md) 解析 `{OUTPUT_DIR}` 并检查：
 
-1. 若 `includes_today = true` → **继续 Phase 2**
-2. 若当前范围对应的 `analysis.json` 与一份 Markdown 报告均存在，且 `meta` 与 Phase 1 日期及范围一致 → **直接返回缓存报告路径**，流程结束，注明「命中历史缓存」
+1. 若 `includes_unstable_data = true` → **继续 Phase 2**
+2. 若当前范围对应的 `analysis.json` 与一份 Markdown 报告均存在，且 `meta` 与 Phase 1 日期、范围及稳定窗口一致 → **直接返回缓存报告路径**，流程结束，注明「命中历史缓存」
 3. 否则 → **继续 Phase 2**
 
 ---

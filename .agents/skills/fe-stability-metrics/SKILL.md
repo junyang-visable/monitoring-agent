@@ -1,7 +1,7 @@
 ---
 name: fe-stability-metrics
 description: 解析稳定性查询结果，计算环比与治理优先级，输出含具体错误突增与处理建议的 analysis.json。
-version: 1.3.0
+version: 1.4.0
 ---
 
 # 稳定性数据分析
@@ -22,6 +22,7 @@ version: 1.3.0
 ## 输入
 
 - Phase 1「fe-stability-query」输出的日期变量、`IS_WEEKLY_REPORT`、`scope`（项目范围另含 `app_name`）
+- Phase 1 输出的 `STABILITY_WINDOW_DAYS`、`STABLE_THROUGH`、`INCLUDES_UNSTABLE_DATA`、`IS_PROVISIONAL`、`data_as_of`
 - Phase 2 全部查询结果（**必须含 Group C**：C1/C2/C3/C4/C5/C6 各 1 条合并查询，结果必须含 `period=CURR|BASE`，且只限当前范围）
 - `{OUTPUT_DIR}`
 
@@ -84,9 +85,11 @@ version: 1.3.0
 `meta` 必须包含：
 
 - `schema_version: "1.1"`
-- `comparison_id`、`today`、`includes_today`、`generated_at`（ISO8601）
+- `comparison_id`、`today`、`generated_at`（ISO8601）
 - 全部日期变量 + `is_weekly_report`
 - `output_dir`（绝对路径）
+- `stability_window_days`、`stable_through`、`includes_unstable_data`、`is_provisional`
+- `data_as_of`（ISO8601，实际查询或分析时间）
 - `scope: "global" | "app"`、`app_name`（仅 `scope=app`）
 
 结构见 [references/analysis-schema.md](references/analysis-schema.md)。

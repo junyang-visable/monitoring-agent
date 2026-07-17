@@ -13,7 +13,7 @@ version: 4.5.0
 1. **按 Phase 1 → [缓存检查] → 2 → 3 → 4 执行**；缓存命中时跳过 Phase 2–4，Phase 1 每次必跑。
 2. **只调用白名单子 skill**（见 [orchestration.md](references/orchestration.md)），**禁止**擅自调用其他任何 skill、MCP、子 agent。
 3. **禁止绕过子 skill**：不得直接跑 `maxc`/shell SQL、不得手写报告、不得在编排器内自行算环比或写 `analysis.json`。
-4. 每个 Phase 必须 **Read 子 skill 的 `SKILL.md` 并完整执行**，收到该 Phase 规定返回值后才能进入下一 Phase。
+4. 每个 Phase 必须按对应子 skill 的定义完整执行，收到该 Phase 规定返回值后才能进入下一 Phase。
 
 > 完整纪律与白名单见 [references/orchestration.md](references/orchestration.md) 的「编排器执行纪律」。
 
@@ -72,10 +72,9 @@ fe-stability-analysis（编排器）
 
 调用白名单内子 skill 时：
 
-1. 按 `{skill-name}` 解析路径（项目级 `./skills/` 优先，agents 级 `~/.agents/skills/` 兜底）
-2. **Read** 解析到的 `SKILL.md`，**按其中步骤执行**（不得凭印象省略）
-3. 解析失败则提示安装并**阻塞当前 Phase**，不得改用其他 skill 或直连 ODPS 兜底
-4. **不得**在 Phase 之间插入额外 skill 调用
+1. 按 `{skill-name}` 直接调用对应子 skill，并按其定义执行（不得凭印象省略）
+2. 子 skill 不可用或调用失败时，提示具体原因并**阻塞当前 Phase**，不得改用其他 skill 或直连 ODPS 兜底
+3. **不得**在 Phase 之间插入额外 skill 调用
 
 ---
 
@@ -145,7 +144,7 @@ fe-stability-analysis（编排器）
 - SQL 模板仅由 `fe-stability-query` 维护；编排器与 `dataworks-dev-assistant` **不得**自行编写或修改 SQL 模板
 - 查询执行仅通过 `dataworks-dev-assistant`（Phase 2）；编排器 **不得** 直接执行 `maxc` 或 shell 查数
 - 指标计算仅由 `fe-stability-metrics` 完成；`fe-stability-report-writer` 禁止重算
-- 子 skill 路径、输出目录、产物命名均遵循 [orchestration.md](references/orchestration.md)
+- 子 skill 调用纪律、输出目录、产物命名均遵循 [orchestration.md](references/orchestration.md)
 
 ---
 
@@ -183,10 +182,8 @@ icbu_de.visable_fe_full_monitoring_data_v1
 | 资源 | 说明 |
 |------|------|
 | [references/cache-policy.md](references/cache-policy.md) | 含今天重查 / 历史缓存命中规则 |
-| [references/orchestration.md](references/orchestration.md) | 子 skill 路径、输出目录、产物命名 |
+| [references/orchestration.md](references/orchestration.md) | 子 skill 调用纪律、输出目录、产物命名 |
 | [references/app-mappings.md](references/app-mappings.md) | 项目标准名、展示名称与用户别名 |
 | `fe-stability-query` | SQL 模板见 `{skill}/references/queries.md` |
 | `fe-stability-metrics` | Schema 见 `{skill}/references/analysis-schema.md` |
 | `fe-stability-report-writer` | 模板见 `{skill}/references/template-*.md` |
-
-以上 skill 路径均按 [orchestration.md](references/orchestration.md) 解析。

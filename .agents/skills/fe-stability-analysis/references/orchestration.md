@@ -11,7 +11,7 @@
 1. **按 Phase 1 → [缓存检查] → 2 → 3 → 4 顺序执行**；缓存命中时可跳过 Phase 2–4，但 Phase 1 与缓存检查不可跳过。
 2. **仅调用白名单 skill**（见下表），不得擅自调用任何其他 skill、MCP、子 agent 或外部助手。
 3. **不得绕过子 skill**：禁止直接执行 shell / `maxc` / DataWorks CLI、禁止手写 SQL 替代 `fe-stability-query`、禁止直接写 Markdown 报告替代 `fe-stability-report-writer`、禁止在编排器内自行计算指标替代 `fe-stability-metrics`。
-4. **子 skill 必须 Read + 执行**：找到 `SKILL.md` 后按其步骤完整执行，不得凭记忆或摘要代替读取。
+4. **子 skill 必须完整执行**：按对应 skill 的定义完整执行，不得凭记忆或摘要省略步骤。
 5. **等待 Phase 完成**：每一 Phase 必须收到该 Phase 规定的返回值后，方可进入下一 Phase。
 6. **不得因「更高效」「更熟悉」而替换路径**：即使其他 skill 看似能完成同类任务，仍必须走本编排链路。
 7. **范围与日期以本次 Phase 1「fe-stability-query」为准**：每次请求必须先解析项目范围并重算日期，不得沿用会话或旧报告中的区间。
@@ -37,32 +37,6 @@
 - 任意 Cursor / QoderWork 通用 skill（如 `explore-repository`、`cr-frontend` 等）
 
 若用户或上下文暗示使用上述 skill，编排器仍**只走本编排链路**。
-
----
-
-## 子 skill 路径解析
-
-调用任意子 skill 前，将 `{skill-name}` 替换为实际 skill 目录名，**按优先级查找第一个存在的 `SKILL.md`**：
-
-| 优先级 | 路径模板 |
-|--------|----------|
-| 1 | `./skills/{skill-name}/SKILL.md` |
-| 2 | `~/.agents/skills/{skill-name}/SKILL.md` |
-
-**解析失败**：两处均不存在 → 提示用户安装 `{skill-name}`，**阻塞当前 Phase**，不得跳过，不得改用其他 skill 或直连 ODPS 兜底。例外：`report-generator` 是 Phase 4 的可选后处理 skill，不存在时使用报告草稿作为最终报告并继续。
-
-**读取并执行**：找到路径后，Read 该 `SKILL.md` 并按其流程执行。
-
----
-
-## 引用文件路径解析
-
-子 skill 的 `references/` 文件沿用相同优先级：
-
-| 优先级 | 路径模板 |
-|--------|----------|
-| 1 | `./skills/{skill-name}/references/{file}` |
-| 2 | `~/.agents/skills/{skill-name}/references/{file}` |
 
 ---
 

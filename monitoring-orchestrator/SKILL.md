@@ -47,4 +47,4 @@ Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 
 - Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
 - Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
 - Evidence → `artifacts/monitoring/<timestamp>/<project>/<signal>.json`
-- Reports → `artifacts/monitoring/<timestamp>/monitoring_report_<timestamp>.md` and `.json`
+- Reports → `artifacts/monitoring/<timestamp>/report.md` and `report.json`

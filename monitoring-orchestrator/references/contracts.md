@@ -23,6 +23,29 @@ Rules:
 - `errors` contains type, message, and source; secrets must be redacted.
 - `evidence` points to the redacted per-signal log.
 
+## Run report contract
+
+Write one normalized run report in both Markdown and JSON:
+
+```yaml
+run_id: string # directory timestamp
+observed_at: ISO-8601 timestamp
+time_range:
+  label: string
+  start: ISO-8601 timestamp
+  end: ISO-8601 timestamp
+projects: []
+```
+
+Write these files under `artifacts/monitoring/<run_id>/`:
+
+```text
+report.md
+report.json
+```
+
+Keep `time_range` in the report body rather than duplicating it in the filename.
+
 Datadog, Stability SDK, and Sentry share the resolved `time_range`. Sentry compares that current window with the immediately preceding, equal-duration baseline. `delta` is current minus baseline; percentage delta is omitted when baseline is zero.
 
 Stability SDK receives the equivalent calendar-day intent. Its data-stability window remains governed by `fe-stability-analysis`.

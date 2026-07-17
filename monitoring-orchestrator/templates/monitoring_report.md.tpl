@@ -1,5 +1,7 @@
 # Monitoring Report — {{ observed_at }}
 
+Time range: {{ time_range.start }} to {{ time_range.end }} ({{ time_range.label }})
+
 Project count: {{ project_count }}
 
 {{#projects}}

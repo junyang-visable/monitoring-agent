@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -31,9 +32,40 @@ def iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def windows(now: datetime | None = None) -> tuple[datetime, datetime, datetime]:
-    end = now or datetime.now(timezone.utc)
-    return end - timedelta(hours=48), end - timedelta(hours=24), end
+def _as_utc(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("Explicit time_range values must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def resolve_time_range(value: str | dict[str, str] | None, now: datetime | None = None) -> dict[str, Any]:
+    """Resolve the shared monitoring window to UTC start/end timestamps."""
+    current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    today = current.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if isinstance(value, dict):
+        start = _as_utc(value["start"])
+        end = _as_utc(value["end"])
+        label = f"{start.date().isoformat()} to {end.date().isoformat()}"
+    else:
+        preset = value or "today"
+        if preset == "today":
+            start, end, label = today, current, "today"
+        elif preset == "yesterday":
+            end = today
+            start = end - timedelta(days=1)
+            label = "yesterday"
+        else:
+            match = re.fullmatch(r"last_(\d+)d", preset)
+            if not match or int(match.group(1)) < 1:
+                raise ValueError("time_range must be today, yesterday, last_<N>d, or a {start, end} mapping")
+            days = int(match.group(1))
+            start, end, label = today - timedelta(days=days - 1), current, preset
+
+    if end <= start:
+        raise ValueError("time_range.end must be later than time_range.start")
+    return {"label": label, "start": start, "end": end}
 
 
 def sentry_count(items: list[dict[str, Any]]) -> int:
@@ -65,7 +97,7 @@ def fetch_json(url: str, token: str, *, method: str = "GET", body: dict[str, Any
         return json.loads(payload.decode()) if payload else {}
 
 
-def fetch_sentry(project_name: str, config: dict[str, Any], timeout: int = 60) -> dict[str, Any]:
+def fetch_sentry(project_name: str, config: dict[str, Any], timeout: int = 60, time_range: str | dict[str, str] | None = None) -> dict[str, Any]:
     started = time.monotonic()
     token = os.getenv(config.get("token_env", "SENTRY_AUTH_TOKEN"))
     if not token:
@@ -73,8 +105,11 @@ def fetch_sentry(project_name: str, config: dict[str, Any], timeout: int = 60) -
     base = config.get("base_url", "https://sentry.io").rstrip("/")
     organization = config["organization"]
     project = config["project"]
-    baseline_start, current_start, end = windows()
     try:
+        resolved_range = resolve_time_range(time_range if time_range is not None else config.get("time_range"))
+        current_start, end = resolved_range["start"], resolved_range["end"]
+        baseline_start = current_start - (end - current_start)
+
         def count(start: datetime, finish: datetime) -> int:
             query = urlencode({"project": project, "start": start.isoformat(), "end": finish.isoformat(), "limit": 100})
             data = fetch_json(f"{base}/api/0/organizations/{organization}/issues/?{query}", token, timeout=timeout)
@@ -83,14 +118,15 @@ def fetch_sentry(project_name: str, config: dict[str, Any], timeout: int = 60) -
         baseline = count(baseline_start, current_start)
         current = count(current_start, end)
         metrics: dict[str, Any] = {
-            "current_24h": current,
-            "baseline_24h": baseline,
+            "current": current,
+            "baseline": baseline,
             "delta": current - baseline,
             "windows": {"current": [current_start.isoformat(), end.isoformat()], "baseline": [baseline_start.isoformat(), current_start.isoformat()]},
+            "time_range": {"label": resolved_range["label"], "start": current_start.isoformat(), "end": end.isoformat()},
         }
         if baseline:
             metrics["delta_percent"] = round((current - baseline) / baseline * 100, 2)
-        return {"signal": "sentry", "project": project_name, "status": "ok", "observed_at": iso_now(), "duration_ms": round((time.monotonic() - started) * 1000), "summary": f"{current} errors in the last 24h; delta {current - baseline}", "metrics": metrics, "errors": [], "evidence": ""}
+        return {"signal": "sentry", "project": project_name, "status": "ok", "observed_at": iso_now(), "duration_ms": round((time.monotonic() - started) * 1000), "summary": f"{current} errors in {resolved_range['label']}; delta {current - baseline}", "metrics": metrics, "errors": [], "evidence": ""}
     except (HTTPError, URLError, KeyError, ValueError, json.JSONDecodeError) as exc:
         return error_result("sentry", project_name, type(exc).__name__, str(exc), round((time.monotonic() - started) * 1000))
 

@@ -12,3 +12,5 @@ Configuration-driven monitoring agent for collecting signals from multiple proje
 The agent performs real calls only. Missing credentials, permissions, empty responses, and timeouts are reported as degraded or unavailable; no synthetic metrics are generated.
 
 For Datadog, set `datadog.service` only when it differs from the project's `app_name`; otherwise the agent uses `app_name` as the service filter.
+
+Set `defaults.time_range` to `today`, `yesterday`, or `last_<N>d` (for example `last_7d`). A project or manual request may override it with the same preset or explicit UTC `start`/`end` timestamps. Datadog, Stability SDK, and Sentry share the resolved range; tracking patrol always reads the latest run.

@@ -23,6 +23,6 @@ Rules:
 - `errors` contains type, message, and source; secrets must be redacted.
 - `evidence` points to the redacted per-signal log.
 
-Sentry uses two adjacent windows: current `now-24h..now` and baseline `now-48h..now-24h`. `delta` is current minus baseline. Percentage delta is omitted when baseline is zero.
+Datadog, Stability SDK, and Sentry share the resolved `time_range`. Sentry compares that current window with the immediately preceding, equal-duration baseline. `delta` is current minus baseline; percentage delta is omitted when baseline is zero.
 
-Stability SDK always invokes `fe-stability-analysis` for the rolling window `now-24h..now`; it does not use a calendar-day boundary.
+Stability SDK receives the equivalent calendar-day intent. Its data-stability window remains governed by `fe-stability-analysis`.

@@ -3,6 +3,9 @@ defaults:
   enabled: true
   timeout_seconds: 60
   timezone: UTC
+  # Shared range for Datadog, Stability SDK, and Sentry. Accepted presets:
+  # today, yesterday, last_<N>d. A project may instead set {start, end} in ISO-8601.
+  time_range: today
   tracking_patrol:
     mode: read_latest
 
@@ -15,10 +18,9 @@ projects:
     datadog:
       enabled: true
       # Optional override. Omit when the Datadog service equals app_name.
-      # service: "datadog-service-name"
+      service: "visable-dev/search-frontend"
     stability_sdk:
       enabled: true
-      date_range: today
       output_mode: analysis_only
     sentry:
       enabled: true

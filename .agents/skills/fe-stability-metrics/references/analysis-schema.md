@@ -19,7 +19,7 @@
 
 ```
 {OUTPUT_DIR}/overview.json
-{OUTPUT_DIR}/{app_name}.json
+{OUTPUT_DIR}/{app_name}/fe-stability-analysis.json
 ```
 
 ## 顶层结构
@@ -49,7 +49,7 @@ meta:
   is_weekly_report: boolean
   scope_key: string                # apps-<sorted-app-names 的 SHA-256 前 12 位>
   app_names: [string]              # 传入或默认解析出的去重标准项目名
-  project_files: { app_name: "{app_name}.json" } # 仅总览
+  project_files: { app_name: "{app_name}/fe-stability-analysis.json" } # 仅总览
   app_name: string | null          # 仅项目 JSON；总览为 null
   output_dir: string
 

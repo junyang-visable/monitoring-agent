@@ -1,7 +1,7 @@
 ---
 name: fe-stability-metrics
 description: 解析稳定性查询结果，计算环比与治理优先级，输出全局总览与每项目独立 JSON，含具体错误突增与处理建议。
-version: 2.2.0
+version: 2.3.0
 ---
 
 # 稳定性数据分析
@@ -84,7 +84,7 @@ version: 2.2.0
 
 ```text
 {OUTPUT_DIR}/overview.json
-{OUTPUT_DIR}/{app_name}.json
+{OUTPUT_DIR}/{app_name}/fe-stability-analysis.json
 ```
 
 `scope_key` 为项目按字典序拼接后 SHA-256 前 12 位的 `apps-<hash>`。
@@ -97,7 +97,7 @@ version: 2.2.0
 - `output_dir`（绝对路径）
 - 日或小时稳定窗口参数、`includes_unstable_data`、`is_provisional`
 - `data_as_of`（ISO8601，实际查询或分析时间）
-- `app_names`、`scope_key` 和每个项目 JSON 的相对路径映射 `project_files`（`{app_name}.json`）
+- `app_names`、`scope_key` 和每个项目 JSON 的相对路径映射 `project_files`（`{app_name}/fe-stability-analysis.json`）
 - `cache_key`（由 Phase 1 计算；不稳定数据也可记录但不得写缓存索引）
 
 每个项目 JSON 复用相同时间、粒度与稳定窗口 `meta`，并额外包含唯一 `app_name`；只包含该项目的 totals、breakdowns、metrics、issues、priority_actions、spike_alerts 与 governance。

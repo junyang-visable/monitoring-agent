@@ -4,7 +4,7 @@
 
 ## 缓存索引
 
-唯一缓存索引文件为 `{CACHE_DIR}/index.json`；`{CACHE_DIR}` 默认是 `{git_root}/artifacts/fe-stability-analysis/.cache/`，无法识别 git 根目录时使用 `{cwd}/artifacts/fe-stability-analysis/.cache/`。环境变量 `FE_STABILITY_CACHE_DIR` 可覆盖该目录。
+唯一缓存索引文件为 `{CACHE_DIR}/index.json`；`{CACHE_DIR}` 默认是 `{git_root}/artifacts/monitoring/.cache/fe-stability-analysis/`，无法识别 git 根目录时使用 `{cwd}/artifacts/monitoring/.cache/fe-stability-analysis/`。环境变量 `FE_STABILITY_CACHE_DIR` 可覆盖该目录。
 
 Phase 1 对下列字段按固定键顺序序列化后计算 SHA-256，取前 24 位作为 `cache_key`：
 
@@ -28,9 +28,9 @@ Phase 1 对下列字段按固定键顺序序列化后计算 SHA-256，取前 24 
     "<cache_key>": {
       "key_input": { "app_names": [], "time_range": {}, "time_granularity": "hour", "partition_timezone": "GMT+1" },
       "source_run_id": "20260717T080844Z",
-      "source_output_dir": "/abs/.../artifacts/fe-stability-analysis/20260717T080844Z",
+      "source_output_dir": "/abs/.../artifacts/monitoring/20260717T080844Z",
       "overview_path": "/abs/.../overview.json",
-      "project_paths": { "search-frontend": "/abs/.../search-frontend.json" },
+      "project_paths": { "search-frontend": "/abs/.../search-frontend/fe-stability-analysis.json" },
       "meta_fingerprint": "<sha256>",
       "created_at": "ISO8601"
     }
@@ -57,16 +57,16 @@ Phase 1 计算 `includes_unstable_data` 与 `is_provisional`。覆盖稳定窗�
 命中有效索引时：
 
 - `analysis_only`：跳过 Phase 2–3，返回索引指向的总览和项目 JSON 绝对路径，并注明源 `run_id`。
-- `report`：跳过 Phase 2–3，使用索引指向的 JSON 执行 Phase 4，在**当前** `{OUTPUT_DIR}` 写入 `report.md`；不得复制 JSON。
+- `report`：跳过 Phase 2–3，使用索引指向的 JSON 执行 Phase 4，在**当前** `{OUTPUT_DIR}` 写入 `fe-stability-analysis.md`；不得复制 JSON。
 
-Phase 3 成功写完 `{OUTPUT_DIR}/overview.json` 与所有 `{app_name}.json` 后：
+Phase 3 成功写完 `{OUTPUT_DIR}/overview.json` 与所有 `{app_name}/fe-stability-analysis.json` 后：
 
 1. 仅当数据稳定且未要求刷新时，计算源文件 `meta_fingerprint`。
 2. 对 `{CACHE_DIR}/index.json` 获取短暂独占锁，重新读取最新内容，仅更新 `entries[cache_key]` 为当前 `run_id` 的绝对路径映射。
 3. 写入临时文件后原子替换 `{CACHE_DIR}/index.json`，再释放锁；临时文件完成后必须删除。
 4. 不稳定或临时数据不得创建或覆盖索引条目。
 
-清理任何 `artifacts/fe-stability-analysis/<run_id>/` 前，必须检查 `index.json` 的全部 `entries.*.source_run_id`；仍被任一条目引用的 run 不得删除。
+清理任何 `artifacts/monitoring/<run_id>/` 前，必须检查 `index.json` 的全部 `entries.*.source_run_id`；仍被任一条目引用的 run 不得删除。
 
 ## Phase 1「fe-stability-query」不可跳过
 

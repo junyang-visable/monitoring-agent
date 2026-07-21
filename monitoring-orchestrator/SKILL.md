@@ -12,7 +12,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 1. Parse and validate the configuration.
 2. Resolve `time_range`, using a project value when present or `defaults.time_range` otherwise. A manual request may override it for this run only.
 3. Start Datadog, Sentry, and tracking patrol paths in parallel for each enabled project.
-4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Start one shared Stability SDK path for all enabled Stability projects: invoke `fe-stability-analysis` once with sorted standard `app_names`, the resolved time intent, `output_mode=analysis_only`, and `output_dir=artifacts/fe-stability-analysis/<run_id>/`; use its project JSON path mapping to attach each project's Stability result.
+4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Start one shared Stability SDK path for all enabled Stability projects: invoke `fe-stability-analysis` once with sorted standard `app_names`, the resolved time intent, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`; use its project JSON path mapping to attach each project's Stability result.
 5. Apply the per-path timeout and capture call metadata.
 6. Normalize every response to the contract in `references/contracts.md`.
 7. Convert exceptions, missing credentials, permission errors, empty responses, and timeouts into `degraded` or `unavailable` results.
@@ -23,7 +23,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 ## Real capability calls
 
 - Datadog → invoke the configured `user-datadog` MCP capability for metrics, monitors, and events. Pass the resolved UTC `start` and `end`; resolve the filter service as `datadog.service` when configured, otherwise use the project's `app_name`.
-- Stability SDK → invoke `fe-stability-analysis` once per monitoring run with the enabled projects' standard `app_names`, resolved `time_range`, `stability_sdk.time_granularity`, `partition_timezone`, `stability_window_hours`, `output_mode=analysis_only`, and `output_dir=artifacts/fe-stability-analysis/<run_id>/`. For `time_granularity=hour`, the SDK queries completed `ds/hh` partitions in the configured partition timezone. Consume each project's dedicated JSON without generating a separate Stability Markdown report.
+- Stability SDK → invoke `fe-stability-analysis` once per monitoring run with the enabled projects' standard `app_names`, resolved `time_range`, `stability_sdk.time_granularity`, `partition_timezone`, `stability_window_hours`, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`. For `time_granularity=hour`, the SDK queries completed `ds/hh` partitions in the configured partition timezone. Consume `overview.json` and each `{app_name}/fe-stability-analysis.json` without generating a separate Stability Markdown report.
 - Sentry → call the Sentry REST API using the configured organization, project, and resolved window. Use the immediately preceding, equal-duration window as the baseline.
 - tracking_patrol → read the latest GitHub Actions run by default; dispatch a new run only when mode is `trigger` or a manual override requests it.
 
@@ -48,6 +48,6 @@ Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 
 - Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
 - Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
 - Evidence → `artifacts/monitoring/<run_id>/<project>/<signal>.json` (`run_id` is UTC `YYYYMMDDTHHMMSSZ`)
-- Stability overview → `artifacts/fe-stability-analysis/<run_id>/overview.json`
-- Stability projects → `artifacts/fe-stability-analysis/<run_id>/{app_name}.json`
+- Stability overview → `artifacts/monitoring/<run_id>/overview.json`
+- Stability projects → `artifacts/monitoring/<run_id>/{app_name}/fe-stability-analysis.json`
 - Reports → `artifacts/monitoring/<run_id>/report.md` and `report.json`

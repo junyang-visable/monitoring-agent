@@ -1,7 +1,7 @@
 ---
 name: fe-stability-analysis
 description: 从 ODPS 查询前端稳定性数据并生成结构化分析结果；默认生成 Markdown 报告，也支持仅返回分析结果供监控编排消费。
-version: 5.0.0
+version: 5.1.0
 ---
 
 # 前端稳定性分析编排器
@@ -60,8 +60,8 @@ fe-stability-analysis（编排器）
 | 产物 | 说明 |
 |------|------|
 | `overview.json` | 跨项目总览 |
-| `{app_name}.json` | 项目独立分析 |
-| `report.md` | 仅 `output_mode=report` 时生成的唯一 Markdown 分析报告 |
+| `{app_name}/fe-stability-analysis.json` | 项目独立分析 |
+| `fe-stability-analysis.md` | 仅 `output_mode=report` 时生成的唯一 Markdown 分析报告；避免覆盖 Monitoring 的 `report.md` |
 
 ---
 
@@ -102,7 +102,7 @@ fe-stability-analysis（编排器）
 按 [references/cache-policy.md](references/cache-policy.md) 计算 `cache_key`、解析 `{CACHE_DIR}` 并读取唯一 `{CACHE_DIR}/index.json` 的 `entries[cache_key]`；不得扫描 `.cache` 或检查当前 `{OUTPUT_DIR}` 是否存在历史 JSON：
 
 1. 若 `includes_unstable_data = true`、`is_provisional = true` 或用户要求刷新 → **继续 Phase 2**
-2. 若 `{CACHE_DIR}/index.json` 的 `entries[cache_key]` 有效并指向完整、元数据匹配的源 run JSON：`analysis_only` 直接返回源路径；`report` 跳过 Phase 2–3，继续 Phase 4 在当前 run 写 `report.md`
+2. 若 `{CACHE_DIR}/index.json` 的 `entries[cache_key]` 有效并指向完整、元数据匹配的源 run JSON：`analysis_only` 直接返回源路径；`report` 跳过 Phase 2–3，继续 Phase 4 在当前 run 写 `fe-stability-analysis.md`
 3. 否则 → **继续 Phase 2**
 
 ---
@@ -196,7 +196,7 @@ icbu_de.visable_fe_full_monitoring_data_v1
 | 资源 | 说明 |
 |------|------|
 | [references/cache-policy.md](references/cache-policy.md) | 含今天重查 / 历史缓存命中规则 |
-| [references/orchestration.md](references/orchestration.md) | 子 skill 调用纪律、输出目录（默认 `artifacts/fe-stability-analysis/<run_id>/`）、产物命名 |
+| [references/orchestration.md](references/orchestration.md) | 子 skill 调用纪律、输出目录（默认 `artifacts/monitoring/<run_id>/`）、产物命名 |
 | [references/app-mappings.md](references/app-mappings.md) | 项目标准名、展示名称与用户别名 |
 | `fe-stability-query` | SQL 模板见 `references/batch-queries.md` |
 | `fe-stability-metrics` | Schema 见 `{skill}/references/analysis-schema.md` |

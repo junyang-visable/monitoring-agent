@@ -1,7 +1,7 @@
 ---
 name: fe-stability-report-writer
 description: 读取 Stability 总览及项目独立 JSON，渲染一份事实完整的 Markdown 报告，并在可用时调用 report-generator 进行结构与表达审校。
-version: 2.1.0
+version: 2.2.0
 ---
 
 # 报告渲染与输出
@@ -33,7 +33,7 @@ version: 2.1.0
 
 校验每个文件的 `meta.comparison_id`、`meta.schema_version` 与项目范围一致。项目章节只能读取对应项目 JSON；不得从总览中假设或重建项目明细。
 
-缓存命中时可读取源 `run_id` 的 JSON，并仍在当前 `{OUTPUT_DIR}` 写入 `report.md`；不得复制源 JSON。
+缓存命中时可读取源 `run_id` 的 JSON，并仍在当前 `{OUTPUT_DIR}` 写入 `fe-stability-analysis.md`；不得复制源 JSON。
 
 ---
 
@@ -41,7 +41,7 @@ version: 2.1.0
 
 | 范围 | 模板 | 输出 |
 |---|---|---|
-| `app_names` | [references/template-by-apps.md](references/template-by-apps.md) | `report.md`；按 `meta.app_names` 渲染每个项目章节 |
+| `app_names` | [references/template-by-apps.md](references/template-by-apps.md) | `fe-stability-analysis.md`；按 `meta.app_names` 渲染每个项目章节 |
 
 不得在同一次执行中渲染两份报告。
 
@@ -54,7 +54,7 @@ version: 2.1.0
 - 「本应用需优先处理（TOP 5）」— 对应项目 JSON 的 `priority_actions`
 - 资源/API/JS 等明细表 — 含基线/天、当前/天、变化、建议
 
-草稿：`{OUTPUT_DIR}/.draft-report.md`
+草稿：`{OUTPUT_DIR}/.draft-fe-stability-analysis.md`
 
 ---
 

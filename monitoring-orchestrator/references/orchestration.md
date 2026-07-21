@@ -5,7 +5,7 @@ Only these downstream capabilities are allowed in Phase 1:
 | Signal | Capability | Required data |
 |---|---|---|
 | Datadog | `user-datadog` MCP | error rate, 4xx/5xx, P95 within the resolved `time_range`; use `datadog.service` or fall back to `app_name` |
-| Stability SDK | `fe-stability-analysis` (`app_names`, `output_mode=analysis_only`, `output_dir=artifacts/fe-stability-analysis/<run_id>/`) | generate one UTC `run_id` (`YYYYMMDDTHHMMSSZ`) for all signals; consume the overview plus dedicated project JSON files in the matching run directory; no separate Stability Markdown report |
+| Stability SDK | `fe-stability-analysis` (`app_names`, `output_mode=analysis_only`, `output_dir=artifacts/monitoring/<run_id>/`) | generate one UTC `run_id` (`YYYYMMDDTHHMMSSZ`) for all signals; consume `overview.json` plus `{app_name}/fe-stability-analysis.json` in the matching run directory; no separate Stability Markdown report |
 | Sentry | Sentry REST API | errors in the resolved `time_range` and delta against its equal-duration baseline |
 | tracking_patrol | GitHub Actions API | latest patrol pass/fail summary |
 

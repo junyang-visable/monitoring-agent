@@ -46,6 +46,19 @@ report.json
 
 Keep `time_range` in the report body rather than duplicating it in the filename.
 
+### report.md scope boundary
+
+`report.md` is a **signal-level overview** (~60–100 lines per project). It must NOT contain:
+
+- Full error-by-error breakdown tables
+- Spike alert listings
+- Governance item lists or repair suggestions
+- Hourly breakdown data or category-level sub-sections
+
+Those details live in the evidence JSON files. The report references evidence paths so readers can drill down.
+
+Follow the exact structure and constraints defined in `SKILL.md § Report formatting rules`.
+
 The shared Stability SDK analysis is stored in the same Monitoring run directory. Use the same `run_id`:
 
 ```text

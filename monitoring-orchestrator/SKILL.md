@@ -46,8 +46,12 @@ Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 
 ## Output
 
 - Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
+- Report formatting rules → `references/report-format.md`
+- Signal contract → `references/contracts.md`
 - Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
 - Evidence → `artifacts/monitoring/<run_id>/<project>/<signal>.json` (`run_id` is UTC `YYYYMMDDTHHMMSSZ`)
 - Stability overview → `artifacts/monitoring/<run_id>/overview.json`
 - Stability projects → `artifacts/monitoring/<run_id>/{app_name}/fe-stability-analysis.json`
 - Reports → `artifacts/monitoring/<run_id>/report.md` and `report.json`
+
+Step 9 (write reports) MUST follow [references/report-format.md](references/report-format.md). The report is a signal-level dashboard; detailed analysis stays in evidence JSONs.

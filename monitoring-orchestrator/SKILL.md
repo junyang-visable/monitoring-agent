@@ -22,10 +22,11 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 
 ## Real capability calls
 
-- Datadog → invoke the configured `user-datadog` MCP capability for metrics, monitors, and events. Pass the resolved UTC `start` and `end`; resolve the filter service as `datadog.service` when configured, otherwise use the project's `app_name`.
-- Stability SDK → invoke `fe-stability-analysis` once per monitoring run with the enabled projects' standard `app_names`, resolved `time_range`, `stability_sdk.time_granularity`, `partition_timezone`, `stability_window_hours`, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`. For `time_granularity=hour`, the SDK queries completed `ds/hh` partitions in the configured partition timezone. Consume `overview.json` and each `{app_name}/fe-stability-analysis.json` without generating a separate Stability Markdown report.
-- Sentry → call the Sentry REST API using the configured organization, project, and resolved window. Use the immediately preceding, equal-duration window as the baseline.
-- tracking_patrol → read the latest GitHub Actions run by default; dispatch a new run only when mode is `trigger` or a manual override requests it.
+- Before each capability call, read its dedicated specification:
+  - Datadog → [references/capabilities/datadog.md](references/capabilities/datadog.md)
+  - Stability SDK → [references/capabilities/stability-sdk.md](references/capabilities/stability-sdk.md)
+  - Sentry → [references/capabilities/sentry.md](references/capabilities/sentry.md)
+  - tracking_patrol → [references/capabilities/tracking-patrol.md](references/capabilities/tracking-patrol.md)
 
 The Sentry and GitHub HTTP implementations are in `monitoring-orchestrator/runtime.py`. They use only the Python standard library and environment-provided tokens. The Datadog and Stability SDK calls remain capability invocations performed by the agent runtime.
 
@@ -48,6 +49,7 @@ Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 
 - Markdown template → `monitoring-orchestrator/templates/monitoring_report.md.tpl`
 - Report formatting rules → `references/report-format.md`
 - Signal contract → `references/contracts.md`
+- Capability specifications → `references/capabilities/`
 - Thresholds → `monitoring-orchestrator/config/thresholds.yaml`
 - Evidence → `artifacts/monitoring/<run_id>/<project>/<signal>.json` (`run_id` is UTC `YYYYMMDDTHHMMSSZ`)
 - Stability overview → `artifacts/monitoring/<run_id>/overview.json`

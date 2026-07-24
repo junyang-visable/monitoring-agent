@@ -50,7 +50,8 @@ The monitoring report references evidence files; the reader uses evidence JSONs 
 ## Datadog summary constraints
 
 - If monitors are found, include a monitor table (name / state / threshold).
-- Report total error log count and dominant error message.
+- Report the exact total error-log count returned by the Logs Aggregate API.
+- Include at most five errors ordered by count descending.
 - Do NOT dump raw log entries or full monitor definitions.
 
 ## Sentry summary constraints

@@ -12,14 +12,27 @@ Pass the resolved UTC `start` and `end` for the shared monitoring window. Resolv
 
 ## Required data
 
-- Error rate
-- 4xx/5xx responses
-- P95 latency
+- Total error-log count within the resolved time range
+- Top five errors by count
 - Monitor state when available
-- Relevant events within the resolved time range
+- Configured metric queries such as error rate, 4xx/5xx, and P95 latency when available
 
-The adapter searches error logs and service monitors by default. Configure `metric_queries` with the service's actual Datadog metric names for error rate, 4xx/5xx, and P95 latency. Query templates may use `{service}`.
+The adapter uses the Logs Aggregate API twice: one total `count` query and one grouped `count` query sorted descending with `top_error_limit=5`. Configure `error_group_by` with a Datadog log facet such as `@error.message`. Configure `metric_queries` with the service's actual Datadog metric names for error rate, 4xx/5xx, and P95 latency. Query templates may use `{service}`.
 
 ## Result handling
 
 Normalize the API response to the signal contract in [../contracts.md](../contracts.md). Preserve only values returned by Datadog; do not fabricate missing metrics. Missing credentials, permission errors, HTTP failures, or empty responses must become `degraded` or `unavailable` results according to the contract.
+
+The normalized Datadog metrics include:
+
+```yaml
+error_log_count: integer
+top_errors:
+  - rank: integer
+    error: string
+    count: integer
+dominant_error: string | null
+dominant_error_count: integer
+monitors: []
+metric_queries: {}
+```

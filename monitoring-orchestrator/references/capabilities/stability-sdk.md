@@ -10,13 +10,15 @@ When the global switch is true, validate the root-level configuration and build 
 
 - sorted standard `app_names`
 - the resolved time intent
-- global `stability_sdk.time_granularity`
+- the effective time granularity selected from global `stability_sdk.time_granularity`
 - global `stability_sdk.partition_timezone`
-- global `stability_sdk.stability_window_hours`
+- the matching global `stability_sdk.stability_window_days` or `stability_window_hours`
 - global `stability_sdk.output_mode` (must be `analysis_only`)
 - `output_dir=artifacts/monitoring/<run_id>/`
 
-For `time_granularity=hour`, the SDK queries completed `ds/hh` partitions in the configured partition timezone.
+`time_granularity=auto` is intent-driven. Explicit hour intents such as `last_2h` and `last_24h` select `hour`; `today`, `yesterday`, `last_<N>d`, natural-week intents, and calendar-date ranges select `day`. A day-based intent must never be changed to `hour` merely because its duration is 24 hours.
+
+For `time_granularity=hour`, the SDK independently floors the run time to the latest completed hour and queries the matching `ds/hh` partitions in the configured partition timezone. Datadog and Sentry retain exact rolling timestamps and must not inherit this rounding. For `day`, Stability queries the calendar dates represented by the shared intent.
 
 ## Output consumption
 

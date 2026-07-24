@@ -4,7 +4,7 @@ defaults:
   timeout_seconds: 60
   timezone: UTC
   # Shared range for Datadog, Stability SDK, and Sentry. Accepted presets:
-  # today, yesterday, last_<N>d, or last_<N>h. A project may instead set {start, end} in ISO-8601.
+  # today, yesterday, last_<N>d, or last_<N>h. A manual run may instead use {start, end} in ISO-8601.
   time_range: last_24h
 
 # Shared platform configuration. Project-level blocks override these values.
@@ -14,7 +14,8 @@ datadog:
     api_key_env: DD_API_KEY
     application_key_env: DD_APPLICATION_KEY
     log_query: "service:{service} status:error"
-    log_limit: 100
+    error_group_by: "@error.message"
+    top_error_limit: 5
     # Fill in the metric names used by all services when available.
     metric_queries:
       error_rate: null
@@ -35,11 +36,13 @@ tracking_patrol:
 
 # Shared configuration for the single cross-project Stability SDK run.
 stability_sdk:
-  enabled: false
+  enabled: true
   output_mode: analysis_only
-  time_granularity: hour
+  # Auto selects hour only for an explicit last_<N>h intent; all natural-day intents use day.
+  time_granularity: auto
   # The ETL writes ds/hh after converting source time from GMT+8 to GMT+1.
   partition_timezone: GMT+1
+  stability_window_days: 1
   stability_window_hours: 1
 
 # Add one entry per monitored project. Keep secrets in environment variables.

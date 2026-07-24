@@ -1,7 +1,6 @@
 ---
 name: fe-stability-query
 description: 接收已解析的项目范围与时间意图，生成包含查询参数、缓存标识及 ODPS SQL 批次的前端稳定性查询计划。
-version: 2.2.0
 ---
 
 # 查询计划生成
@@ -21,11 +20,21 @@ version: 2.2.0
 
 ## Step 1：构建查询计划参数
 
+### 粒度选择（强制）
+
+`time_granularity=auto` 或上游未指定粒度时，必须根据时间意图选择实际粒度：
+
+- 只有明确的小时意图使用 `hour`：`last_<N>h`、过去 N 小时、最近 N 小时，例如 `last_2h`、`last_24h`。
+- 所有其他自然日意图使用 `day`：`today`、`yesterday`、`last_<N>d`、今天、昨天、最近 N 天、自然周，以及不包含具体时分秒的日期范围。
+- 不得根据区间恰好等于 24 小时而推断 `hour`。上游若为自然日意图传入 `hour`，必须改为 `day`，避免“昨天”被查询成滚动 24 小时。
+
 `time_granularity=day` 时，根据用户的表述确定对比周期（**今天** = 执行 Phase 1 当日的系统日期，**禁止**沿用本会话或历史跑批中的日期）：
 
 | 用户说法 | CURR | BASE |
 |---------|------|------|
 | 默认（不指定） | 今天 | 昨天 |
+| `today` / 今天 | 今天 | 昨天 |
+| `yesterday` / 昨天 | 昨天 | 前天 |
 | **过去一周 / 最近一周 / 过去 7 天 / 最近 7 天** | 今天起向前共 7 天（含今天） | 紧邻的前 7 天 |
 | **上个自然周 / 上一自然周 / 自然周 / 上个完整自然周** | 上个自然周 周一–周日 | 上上个自然周 周一–周日 |
 | 上周 / 上一周 | 上个自然周 周一–周日 | 上上个自然周 周一–周日 |
@@ -77,7 +86,7 @@ version: 2.2.0
 
 ### 小时粒度
 
-`time_granularity=hour` 时必须同时传入 `partition_timezone` 和 `time_range`。将 UTC 时间范围转换为分区时区后处理：
+只有明确的小时意图（例如 `last_2h`、`last_24h`、过去 N 小时）可以进入小时模式。`time_granularity=hour` 时必须同时传入 `partition_timezone` 和 `time_range`。`time_range` 表达公共时间意图；本 skill 独立生成 SDK 的整点边界，不得要求 Datadog 或 Sentry同步取整。将 UTC 时间范围转换为分区时区后处理：
 
 1. 将 `CURR_END_AT` 向下取整到整点；当前未完成小时永不查询。
 2. `last_<N>h` 的 `CURR_START_AT = CURR_END_AT - N 小时`；BASE 是紧邻且等长的前 N 小时。

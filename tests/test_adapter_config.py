@@ -36,7 +36,7 @@ class ProjectSignalConfigTest(unittest.TestCase):
             "datadog": {
                 "api": {
                     "base_url": "https://api.datadoghq.com",
-                    "log_limit": 100,
+                    "top_error_limit": 5,
                     "metric_queries": {"error_rate": None, "p95_latency": None},
                 }
             },
@@ -45,7 +45,7 @@ class ProjectSignalConfigTest(unittest.TestCase):
                     "datadog": {
                         "enabled": True,
                         "service": "visable-dev/product-editor-frontend",
-                        "api": {"log_limit": 50},
+                        "api": {"top_error_limit": 3},
                     }
                 }
             },
@@ -56,7 +56,7 @@ class ProjectSignalConfigTest(unittest.TestCase):
         self.assertTrue(resolved["enabled"])
         self.assertEqual(resolved["service"], "visable-dev/product-editor-frontend")
         self.assertEqual(resolved["api"]["base_url"], "https://api.datadoghq.com")
-        self.assertEqual(resolved["api"]["log_limit"], 50)
+        self.assertEqual(resolved["api"]["top_error_limit"], 3)
         self.assertEqual(resolved["api"]["metric_queries"], {"error_rate": None, "p95_latency": None})
 
     def test_shared_sentry_and_tracking_values_are_inherited(self) -> None:

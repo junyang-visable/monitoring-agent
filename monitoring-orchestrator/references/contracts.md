@@ -66,6 +66,6 @@ artifacts/monitoring/<run_id>/overview.json
 artifacts/monitoring/<run_id>/<app_name>/fe-stability-analysis.json
 ```
 
-Datadog, Stability SDK, and Sentry share the resolved `time_range`. Sentry compares that current window with the immediately preceding, equal-duration baseline. `delta` is current minus baseline; percentage delta is omitted when baseline is zero.
+Datadog, Stability SDK, and Sentry share one run-level time intent; projects cannot override it. Datadog and Sentry retain exact rolling UTC bounds. Sentry compares that current window with the immediately preceding, equal-duration baseline. `delta` is current minus baseline; percentage delta is omitted when baseline is zero.
 
-Stability SDK receives the equivalent calendar-day intent. Its data-stability window remains governed by `fe-stability-analysis`.
+Stability SDK uses day granularity for natural-day intents such as `yesterday`. It uses hour granularity only for explicit hour intents such as `last_2h` and `last_24h`, and independently rounds its bounds down to completed hours. Its data-stability window remains governed by `fe-stability-analysis`.

@@ -78,8 +78,13 @@ def resolve_time_range(value: str | dict[str, str] | None, now: datetime | None 
             if not match or int(match.group(1)) < 1:
                 raise ValueError("time_range must be today, yesterday, last_<N>d, last_<N>h, or a {start, end} mapping")
             amount, unit = int(match.group(1)), match.group(2)
-            start = current - timedelta(hours=amount) if unit == "h" else today - timedelta(days=amount - 1)
-            end, label = current, preset
+            if unit == "h":
+                end = current
+                start = end - timedelta(hours=amount)
+            else:
+                start = today - timedelta(days=amount - 1)
+                end = current
+            label = preset
 
     if end <= start:
         raise ValueError("time_range.end must be later than time_range.start")
@@ -115,4 +120,3 @@ def write_evidence(path: str | Path, result: dict[str, Any]) -> None:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(redact(result), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-

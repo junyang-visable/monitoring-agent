@@ -24,8 +24,9 @@ class StabilitySignalEnablementContractTest(unittest.TestCase):
         self.assertRegex(config, r"(?m)^stability_sdk:\n  enabled: (?:true|false)$")
         for setting in (
             "  output_mode: analysis_only",
-            "  time_granularity: hour",
+            "  time_granularity: auto",
             "  partition_timezone: GMT+1",
+            "  stability_window_days: 1",
             "  stability_window_hours: 1",
         ):
             self.assertIn(setting, config)

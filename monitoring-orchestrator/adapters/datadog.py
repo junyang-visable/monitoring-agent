@@ -46,13 +46,34 @@ def _latest_points(response: Any) -> list[float]:
     return values
 
 
-def _error_message(log: dict[str, Any]) -> str:
-    attributes = log.get("attributes", {}) if isinstance(log, dict) else {}
-    for key in ("message", "error.message", "error", "title"):
-        value = attributes.get(key)
-        if value:
-            return str(value)
-    return "unknown"
+def _compute_count(bucket: dict[str, Any]) -> int:
+    for value in bucket.get("computes", {}).values():
+        if isinstance(value, (int, float)):
+            return int(value)
+    return 0
+
+
+def _aggregate_total(response: Any) -> int:
+    data = response.get("data", {}) if isinstance(response, dict) else {}
+    buckets = data.get("buckets", []) if isinstance(data, dict) else []
+    return _compute_count(buckets[0]) if buckets and isinstance(buckets[0], dict) else 0
+
+
+def _aggregate_top_errors(response: Any, facet: str) -> list[dict[str, Any]]:
+    data = response.get("data", {}) if isinstance(response, dict) else {}
+    buckets = data.get("buckets", []) if isinstance(data, dict) else []
+    top_errors: list[dict[str, Any]] = []
+    for bucket in buckets:
+        if not isinstance(bucket, dict):
+            continue
+        grouped = bucket.get("by", {})
+        if not isinstance(grouped, dict):
+            continue
+        error = grouped.get(facet)
+        if error is None and grouped:
+            error = next(iter(grouped.values()))
+        top_errors.append({"rank": len(top_errors) + 1, "error": str(error or "unknown"), "count": _compute_count(bucket)})
+    return top_errors
 
 
 def fetch_datadog(project_name: str, config: dict[str, Any], timeout: int = 60, time_range: str | dict[str, str] | None = None) -> dict[str, Any]:
@@ -75,24 +96,49 @@ def fetch_datadog(project_name: str, config: dict[str, Any], timeout: int = 60, 
         resolved_range = resolve_time_range(time_range if time_range is not None else config.get("time_range"))
         start, end = resolved_range["start"], resolved_range["end"]
         log_query = str(api_config.get("log_query", "service:{service} status:error")).replace("{service}", service)
-        logs_response = fetch_datadog_json(
-            f"{base}/api/v2/logs/events/search",
+        log_filter = {
+            "query": log_query,
+            "from": start.isoformat(),
+            "to": end.isoformat(),
+            "indexes": api_config.get("log_indexes", ["*"]),
+        }
+        aggregate_url = f"{base}/api/v2/logs/analytics/aggregate"
+        total_response = fetch_datadog_json(
+            aggregate_url,
             api_key,
             application_key,
             method="POST",
             body={
-                "filter": {"query": log_query, "from": start.isoformat(), "to": end.isoformat(), "indexes": api_config.get("log_indexes", ["*"])},
-                "sort": "timestamp",
-                "page": {"limit": int(api_config.get("log_limit", 100))},
+                "compute": [{"aggregation": "count", "type": "total"}],
+                "filter": log_filter,
             },
             timeout=timeout,
         )
-        logs = logs_response.get("data", []) if isinstance(logs_response, dict) else []
-        message_counts: dict[str, int] = {}
-        for log in logs:
-            message = _error_message(log)
-            message_counts[message] = message_counts.get(message, 0) + 1
-        dominant_error = max(message_counts, key=message_counts.get) if message_counts else None
+        error_log_count = _aggregate_total(total_response)
+
+        error_group_by = str(api_config.get("error_group_by", "@error.message"))
+        top_error_limit = int(api_config.get("top_error_limit", 5))
+        top_response = fetch_datadog_json(
+            aggregate_url,
+            api_key,
+            application_key,
+            method="POST",
+            body={
+                "compute": [{"aggregation": "count", "type": "total"}],
+                "filter": log_filter,
+                "group_by": [
+                    {
+                        "facet": error_group_by,
+                        "limit": top_error_limit,
+                        "missing": "unknown",
+                        "sort": {"aggregation": "count", "order": "desc", "type": "measure"},
+                    }
+                ],
+            },
+            timeout=timeout,
+        )
+        top_errors = _aggregate_top_errors(top_response, error_group_by)
+        dominant_error = top_errors[0]["error"] if top_errors else None
 
         monitors = fetch_datadog_json(
             f"{base}/api/v1/monitor",
@@ -127,24 +173,25 @@ def fetch_datadog(project_name: str, config: dict[str, Any], timeout: int = 60, 
                 query_errors.append({"type": type(exc).__name__, "message": f"{name}: {exc}"})
 
         metrics = {
-            "error_log_count": len(logs),
-            "error_log_sample_size": len(logs),
+            "error_log_count": error_log_count,
+            "top_errors": top_errors,
             "dominant_error": dominant_error,
+            "dominant_error_count": top_errors[0]["count"] if top_errors else 0,
             "monitors": monitor_rows,
             "metric_queries": query_results,
             "time_range": {"label": resolved_range["label"], "start": start.isoformat(), "end": end.isoformat()},
         }
+        top_error_summary = f"; top error: {dominant_error} ({top_errors[0]['count']})" if top_errors else ""
         return {
             "signal": "datadog",
             "project": project_name,
             "status": "degraded" if query_errors else "ok",
             "observed_at": iso_now(),
             "duration_ms": round((time.monotonic() - started) * 1000),
-            "summary": f"{len(logs)} error logs sampled and {len(monitor_rows)} monitors found in {resolved_range['label']}",
+            "summary": f"{error_log_count} error logs{top_error_summary}; {len(monitor_rows)} monitors found in {resolved_range['label']}",
             "metrics": metrics,
             "errors": query_errors,
             "evidence": "",
         }
     except (HTTPError, URLError, KeyError, ValueError, json.JSONDecodeError) as exc:
         return error_result("datadog", project_name, type(exc).__name__, str(exc), round((time.monotonic() - started) * 1000))
-

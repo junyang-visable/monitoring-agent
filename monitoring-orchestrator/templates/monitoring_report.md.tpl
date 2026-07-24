@@ -13,6 +13,16 @@ Project count: {{ project_count }}
 
 {{ datadog.summary }}
 
+| Metric | Value |
+|--------|------:|
+| Total error logs | {{ datadog.error_log_count }} |
+
+| # | Error | Count |
+|---:|-------|------:|
+{{#datadog.top_errors}}
+| {{ rank }} | {{ error }} | {{ count }} |
+{{/datadog.top_errors}}
+
 {{#datadog.monitors_table}}
 | Monitor | State | Threshold |
 |---------|-------|-----------|

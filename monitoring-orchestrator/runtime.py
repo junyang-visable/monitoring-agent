@@ -5,12 +5,14 @@ re-exports below preserve the original ``runtime`` import surface.
 """
 
 from adapters.common import error_result, fetch_json, iso_now, redact, resolve_time_range, write_evidence
+from adapters.config import deep_merge, resolve_project_signal_config
 from adapters.datadog import fetch_datadog, fetch_datadog_json
 from adapters.github import fetch_tracking_patrol
 from adapters.sentry import fetch_sentry
 
 __all__ = [
     "error_result",
+    "deep_merge",
     "fetch_datadog",
     "fetch_datadog_json",
     "fetch_json",
@@ -18,6 +20,7 @@ __all__ = [
     "fetch_tracking_patrol",
     "iso_now",
     "redact",
+    "resolve_project_signal_config",
     "resolve_time_range",
     "write_evidence",
 ]

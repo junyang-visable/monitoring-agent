@@ -9,7 +9,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 
 ## Required sequence
 
-1. Parse and validate the configuration. Resolve each project's effective `enabled` value, then build separate eligible-project lists for Datadog, Sentry, and tracking patrol from each signal's project-level `enabled` value. Stability SDK is the exception: its `enabled` value is global and must not be read from a project.
+1. Parse and validate the configuration. Resolve each project's effective `enabled` value, then build separate eligible-project lists for Datadog, Sentry, and tracking patrol from each signal's project-level `enabled` value. For each eligible path, call `resolve_project_signal_config` to recursively merge the root platform block with the project's block; project values win. Stability SDK is the exception: its entire configuration is global and must not be read from a project.
 2. Resolve `time_range`, using a project value when present or `defaults.time_range` otherwise. A manual request may override it for this run only.
 3. Start Datadog, Sentry, and tracking patrol paths in parallel for their respective eligible-project lists.
 4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Run the shared Stability path only when global `stability_sdk.enabled == true`. When the global switch is false, skip the path entirely: must not invoke `fe-stability-analysis`, must not read its capability specification, and must not create Stability artifacts. When it is true, validate the single root-level `stability_sdk` configuration, build `stability_projects` from all enabled projects, and invoke `fe-stability-analysis` once with their sorted standard `app_names`, the resolved time intent, the global `time_granularity`, `partition_timezone`, `stability_window_hours`, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`; use its project JSON path mapping to attach each project's Stability result. If the global switch is true but no projects are enabled, record a configuration error without invoking the skill.
@@ -28,7 +28,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
   - Sentry → [references/capabilities/sentry.md](references/capabilities/sentry.md)
   - tracking_patrol → [references/capabilities/tracking-patrol.md](references/capabilities/tracking-patrol.md)
 
-The platform HTTP implementations are in `monitoring-orchestrator/adapters/`: `datadog.py`, `sentry.py`, and `github.py`. Shared helpers are in `adapters/common.py`; `runtime.py` remains a backward-compatible import facade. They use only the Python standard library and environment-provided credentials. Stability SDK remains a capability invocation performed by the agent runtime.
+The platform HTTP implementations are in `monitoring-orchestrator/adapters/`: `datadog.py`, `sentry.py`, and `github.py`. Shared runtime helpers are in `adapters/common.py`, and shared/project configuration merging is in `adapters/config.py`; `runtime.py` remains a backward-compatible import facade. They use only the Python standard library and environment-provided credentials. Stability SDK remains a capability invocation performed by the agent runtime.
 
 Do not replace any real call with sample data. If a capability cannot be invoked in the current runtime, record that fact as an unavailable result.
 

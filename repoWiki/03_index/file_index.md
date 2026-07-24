@@ -4,7 +4,7 @@
 - `.agents/monitoring-agent.md` → Subagent wrapper and invocation contract.
 - `monitoring-orchestrator/SKILL.md` → orchestration instructions.
 - `monitoring-orchestrator/references/` → whitelist and normalized result contract.
-- `monitoring-orchestrator/adapters/{datadog,sentry,github}.py` → platform HTTP adapters; `monitoring-orchestrator/adapters/common.py` → shared runtime helpers; `monitoring-orchestrator/runtime.py` → compatibility facade.
+- `monitoring-orchestrator/adapters/{datadog,sentry,github}.py` → platform HTTP adapters; `monitoring-orchestrator/adapters/common.py` → shared runtime helpers; `monitoring-orchestrator/adapters/config.py` → shared/project config resolver; `monitoring-orchestrator/runtime.py` → compatibility facade.
 - `monitoring-orchestrator/config/monitoring_config.yaml` → multi-project non-secret Skill configuration.
 - `monitoring-orchestrator/config/thresholds.yaml` → default threshold configuration.
 - `monitoring-orchestrator/templates/monitoring_report.md.tpl` → four-signal report template.

@@ -9,6 +9,15 @@ defaults:
   tracking_patrol:
     mode: read_latest
 
+# Shared configuration for the single cross-project Stability SDK run.
+stability_sdk:
+  enabled: false
+  output_mode: analysis_only
+  time_granularity: hour
+  # The ETL writes ds/hh after converting source time from GMT+8 to GMT+1.
+  partition_timezone: GMT+1
+  stability_window_hours: 1
+
 # Add one entry per monitored project. Keep secrets in environment variables.
 projects:
   search-frontend:
@@ -32,13 +41,6 @@ projects:
           http_4xx_rate: null
           http_5xx_rate: null
           p95_latency: null
-    stability_sdk:
-      enabled: false
-      output_mode: analysis_only
-      time_granularity: hour
-      # The ETL writes ds/hh after converting source time from GMT+8 to GMT+1.
-      partition_timezone: GMT+1
-      stability_window_hours: 1
     sentry:
       enabled: true
       organization: "visable-gmbh"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Configuration-driven monitoring for multiple projects. The Subagent delegates to a Skill that invokes four real monitoring capabilities and emits normalized reports with evidence.
+Configuration-driven monitoring for multiple projects. The Subagent delegates to a Skill that invokes each enabled monitoring capability and emits normalized reports with evidence.
 
 ## Architecture
 
@@ -38,7 +38,7 @@ flowchart LR
 - Four paths run independently; one timeout or exception cannot block other signals.
 - Missing credentials produce `unavailable`; metrics remain empty.
 - Datadog, Stability SDK, and Sentry share `time_range` (`today`, `yesterday`, `last_<N>d`, or explicit UTC bounds). Sentry compares it with the immediately preceding equal-duration window and omits percentage delta when baseline is zero.
-- Stability SDK invokes `fe-stability-analysis` with `output_mode=analysis_only`, consumes one cross-project overview plus one independent JSON per project, and does not generate a separate Stability Markdown report.
+- Stability SDK uses one root-level configuration shared by every project. When globally enabled, it invokes `fe-stability-analysis` once for all enabled projects, consumes one cross-project overview plus one independent JSON per project, and does not generate a separate Stability Markdown report.
 - tracking_patrol reads latest by default; `trigger` is explicit in config or manual override.
 - Tokens are read from environment variables and recursively redacted in evidence.
 - Datadog resolves `datadog.service` first and falls back to the project `app_name`; it uses the Python REST adapter with API credentials. Stability SDK remains an agent capability call.

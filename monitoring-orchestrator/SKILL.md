@@ -9,10 +9,10 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
 
 ## Required sequence
 
-1. Parse and validate the configuration.
+1. Parse and validate the configuration. Resolve each project's effective `enabled` value, then build separate eligible-project lists for Datadog, Sentry, and tracking patrol from each signal's project-level `enabled` value. Stability SDK is the exception: its `enabled` value is global and must not be read from a project.
 2. Resolve `time_range`, using a project value when present or `defaults.time_range` otherwise. A manual request may override it for this run only.
-3. Start Datadog, Sentry, and tracking patrol paths in parallel for each enabled project.
-4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Start one shared Stability SDK path for all enabled Stability projects: invoke `fe-stability-analysis` once with sorted standard `app_names`, the resolved time intent, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`; use its project JSON path mapping to attach each project's Stability result.
+3. Start Datadog, Sentry, and tracking patrol paths in parallel for their respective eligible-project lists.
+4. Generate one UTC `run_id` in `YYYYMMDDTHHMMSSZ` format. Run the shared Stability path only when global `stability_sdk.enabled == true`. When the global switch is false, skip the path entirely: must not invoke `fe-stability-analysis`, must not read its capability specification, and must not create Stability artifacts. When it is true, validate the single root-level `stability_sdk` configuration, build `stability_projects` from all enabled projects, and invoke `fe-stability-analysis` once with their sorted standard `app_names`, the resolved time intent, the global `time_granularity`, `partition_timezone`, `stability_window_hours`, `output_mode=analysis_only`, and `output_dir=artifacts/monitoring/<run_id>/`; use its project JSON path mapping to attach each project's Stability result. If the global switch is true but no projects are enabled, record a configuration error without invoking the skill.
 5. Apply the per-path timeout and capture call metadata.
 6. Normalize every response to the contract in `references/contracts.md`.
 7. Convert exceptions, missing credentials, permission errors, empty responses, and timeouts into `degraded` or `unavailable` results.

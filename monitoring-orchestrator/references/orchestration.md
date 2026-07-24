@@ -9,4 +9,10 @@ Only these downstream capabilities are allowed in Phase 1:
 | Sentry | [`capabilities/sentry.md`](capabilities/sentry.md) | errors in the resolved `time_range` and delta against its equal-duration baseline |
 | tracking_patrol | [`capabilities/tracking-patrol.md`](capabilities/tracking-patrol.md) | latest patrol pass/fail summary |
 
+## Signal enablement
+
+First resolve every project's effective `enabled` value. Then build the Datadog, Sentry, and tracking patrol project lists independently: these signals may run only when the project is enabled and the signal's project-level `enabled` value is exactly `true`.
+
+Stability SDK uses one root-level configuration block, gated by global `stability_sdk.enabled == true`. When false, skip the path entirely and must not invoke `fe-stability-analysis`. When true, batch every enabled project into one shared call using the same global `output_mode`, `time_granularity`, `partition_timezone`, and stability-window settings. Project-level `stability_sdk` blocks are not supported.
+
 Out of scope: Defensive SEO, change classification, deploy hooks, Jira ticket creation, and multi-window post-deploy scheduling.

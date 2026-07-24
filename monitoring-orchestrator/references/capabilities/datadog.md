@@ -2,7 +2,7 @@
 
 ## Invocation
 
-Use the Datadog REST API adapter `fetch_datadog` in `monitoring-orchestrator/adapters/datadog.py`. This is the primary path and does not depend on the `user-datadog` MCP capability.
+Use the Datadog REST API adapter `fetch_datadog` in `monitoring-orchestrator/adapters/datadog.py`.
 
 The API requires `DD_API_KEY` and `DD_APPLICATION_KEY` (or the environment variable names configured under `datadog.api`).
 

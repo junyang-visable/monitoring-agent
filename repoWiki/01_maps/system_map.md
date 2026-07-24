@@ -3,7 +3,7 @@
 ```mermaid
 flowchart LR
   Config[Config] --> Orchestrator[Orchestrator]
-  Orchestrator --> Datadog[Datadog MCP]
+  Orchestrator --> Datadog[Datadog REST API]
   Orchestrator --> Stability[Stability SDK]
   Orchestrator --> Sentry[Sentry API]
   Orchestrator --> Patrol[GitHub Actions]

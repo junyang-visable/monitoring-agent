@@ -27,7 +27,8 @@ flowchart LR
 |------|------|
 | `.agents/monitoring-agent.md` | Thin Subagent entry and no-fabrication contract |
 | `monitoring-orchestrator/SKILL.md` | Orchestration sequence and capability whitelist |
-| `monitoring-orchestrator/runtime.py` | Real Sentry and GitHub Actions HTTP adapters |
+| `monitoring-orchestrator/adapters/` | Platform HTTP adapters and shared runtime helpers |
+| `monitoring-orchestrator/runtime.py` | Backward-compatible adapter import facade |
 | `monitoring-orchestrator/config/monitoring_config.yaml` | Multi-project non-secret Skill configuration |
 | `monitoring-orchestrator/references/contracts.md` | Normalized signal envelope |
 | `monitoring-orchestrator/templates/monitoring_report.md.tpl` | Four-signal report layout |

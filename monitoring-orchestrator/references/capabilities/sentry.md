@@ -14,5 +14,4 @@ Return the current error count, baseline error count, delta, and the current and
 
 Normalize the response to the signal contract in [../contracts.md](../contracts.md). Omit percentage delta when the baseline is zero. Convert missing credentials, HTTP failures, invalid responses, and timeouts into `degraded` or `unavailable` results according to the contract.
 
-The standard-library HTTP implementation is in `monitoring-orchestrator/runtime.py`.
-
+The standard-library HTTP implementation is in `monitoring-orchestrator/adapters/sentry.py`.

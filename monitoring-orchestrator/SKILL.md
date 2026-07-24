@@ -28,7 +28,7 @@ Orchestrate real monitoring capabilities for every enabled project in `monitorin
   - Sentry → [references/capabilities/sentry.md](references/capabilities/sentry.md)
   - tracking_patrol → [references/capabilities/tracking-patrol.md](references/capabilities/tracking-patrol.md)
 
-The Sentry and GitHub HTTP implementations are in `monitoring-orchestrator/runtime.py`. They use only the Python standard library and environment-provided tokens. The Datadog and Stability SDK calls remain capability invocations performed by the agent runtime.
+The platform HTTP implementations are in `monitoring-orchestrator/adapters/`: `datadog.py`, `sentry.py`, and `github.py`. Shared helpers are in `adapters/common.py`; `runtime.py` remains a backward-compatible import facade. They use only the Python standard library and environment-provided credentials. Stability SDK remains a capability invocation performed by the agent runtime.
 
 Do not replace any real call with sample data. If a capability cannot be invoked in the current runtime, record that fact as an unavailable result.
 

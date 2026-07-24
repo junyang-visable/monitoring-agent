@@ -2,7 +2,9 @@
 
 ## Invocation
 
-Invoke the configured `user-datadog` MCP capability for metrics, monitors, and events.
+Use the Datadog REST API adapter `fetch_datadog` in `monitoring-orchestrator/adapters/datadog.py`. This is the primary path and does not depend on the `user-datadog` MCP capability.
+
+The API requires `DD_API_KEY` and `DD_APPLICATION_KEY` (or the environment variable names configured under `datadog.api`).
 
 Pass the resolved UTC `start` and `end` for the shared monitoring window. Resolve the service filter from `datadog.service` when configured; otherwise use the project's `app_name`.
 
@@ -14,7 +16,8 @@ Pass the resolved UTC `start` and `end` for the shared monitoring window. Resolv
 - Monitor state when available
 - Relevant events within the resolved time range
 
+The adapter searches error logs and service monitors by default. Configure `metric_queries` with the service's actual Datadog metric names for error rate, 4xx/5xx, and P95 latency. Query templates may use `{service}`.
+
 ## Result handling
 
-Normalize the capability response to the signal contract in [../contracts.md](../contracts.md). Preserve only values returned by Datadog; do not fabricate missing metrics. If the MCP capability cannot be invoked, record an `unavailable` result and continue the other paths.
-
+Normalize the API response to the signal contract in [../contracts.md](../contracts.md). Preserve only values returned by Datadog; do not fabricate missing metrics. Missing credentials, permission errors, HTTP failures, or empty responses must become `degraded` or `unavailable` results according to the contract.

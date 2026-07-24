@@ -10,5 +10,4 @@ By default, read the latest workflow run. Dispatch a new run only when `mode` is
 
 Return the latest run status, conclusion, run identifier, and URL when available. Normalize the response to the signal contract in [../contracts.md](../contracts.md).
 
-The standard-library HTTP implementation is in `monitoring-orchestrator/runtime.py`.
-
+The standard-library HTTP implementation is in `monitoring-orchestrator/adapters/github.py`.

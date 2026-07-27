@@ -50,7 +50,7 @@ Phase 1 对下列字段按固定键顺序序列化后计算 SHA-256，取前 24 
 
 ### 数据稳定窗口判定
 
-Phase 1 计算 `includes_unstable_data` 与 `is_provisional`。覆盖稳定窗口的数据永远重查；例如默认过去 24 小时包含最近完成分区，通常不可缓存。仅完全早于稳定窗口的固定历史区间可复用。
+Phase 1 计算 `includes_unstable_data` 与 `is_provisional`。`stability_window_days = 0` 表示只有当天（尚未结束）的数据不稳定，昨天及更早的已完成自然日视为稳定。因此查「昨天」可缓存，查「今天」必须重查。仅包含当天数据的查询不可缓存。
 
 ## 缓存命中与写入
 

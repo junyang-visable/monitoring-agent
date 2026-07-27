@@ -77,9 +77,9 @@ description: 接收已解析的项目范围与时间意图，生成包含查询�
 
 数据稳定窗口规则：
 
-- `STABILITY_WINDOW_DAYS = 1`；最近一个已完成自然日仍可能有迟到或回补数据。
-- `UNSTABLE_START = TODAY - STABILITY_WINDOW_DAYS`。
-- `STABLE_THROUGH = UNSTABLE_START - 1 day`。
+- `STABILITY_WINDOW_DAYS = 0`；只有当天（未结束）的数据可能有迟到或回补；昨天及更早的数据视为稳定。
+- `UNSTABLE_START = TODAY - STABILITY_WINDOW_DAYS`（即 TODAY 本身）。
+- `STABLE_THROUGH = UNSTABLE_START - 1 day`（即昨天）。
 - `INCLUDES_UNSTABLE_DATA`：CURR 或 BASE 的任一日期大于等于 `UNSTABLE_START`。
 - `IS_PROVISIONAL = INCLUDES_UNSTABLE_DATA`。
 - 查询范围覆盖不稳定窗口时必须重新查数，且不得命中缓存。

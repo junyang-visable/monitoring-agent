@@ -42,7 +42,7 @@ stability_sdk:
   time_granularity: auto
   # The ETL writes ds/hh after converting source time from GMT+8 to GMT+1.
   partition_timezone: GMT+1
-  stability_window_days: 1
+  stability_window_days: 0
   stability_window_hours: 1
 
 # Add one entry per monitored project. Keep secrets in environment variables.

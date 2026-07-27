@@ -34,7 +34,7 @@ Do not replace any real call with sample data. If a capability cannot be invoked
 
 ## Time range
 
-`time_range` is inherited once from `defaults` and can be overridden only by a manual request. Support `today`, `yesterday`, `last_<N>d` (for example `last_7d`), `last_<N>h` (for example `last_24h`), and an explicit mapping:
+`time_range` is inherited once from `defaults` and can be overridden only by a manual request. Support `today`, `yesterday`, `previous_week`, `last_<N>d` (for example `last_7d`), `last_<N>h` (for example `last_24h`), and an explicit mapping:
 
 ```yaml
 time_range:
@@ -44,9 +44,16 @@ time_range:
 
 Resolve presets in UTC. `last_<N>d` starts at the beginning of today minus `N - 1` days and ends at the current time, so it includes today. For `last_<N>h`, Datadog and Sentry keep the exact rolling bounds ending at the current time; do not round their timestamps to an hour boundary.
 
+Interpret natural-language week requests by their calendar meaning:
+
+- `上周`, `上一周`, `上个星期`, or `previous week` → `previous_week`, the complete previous Monday-to-Monday UTC calendar week.
+- `过去一周`, `最近一周`, `近一周`, `过去 7 天`, or `last 7 days` → `last_7d`, including today through the current time.
+
+Never map a previous-calendar-week phrase to `last_7d`. Preserve the resolved preset label in reports so the selected intent is visible.
+
 When `stability_sdk.time_granularity=auto`, select the effective SDK granularity from the shared time intent:
 
-- `yesterday` → `day`; the same applies to `today`, `last_<N>d`, natural weeks, and explicit calendar-date ranges.
+- `yesterday` → `day`; the same applies to `today`, `previous_week`, `last_<N>d`, natural weeks, and explicit calendar-date ranges.
 - `last_<N>h` → `hour`; this includes explicit requests such as “过去 2 小时” and “过去 24 小时”.
 - The orchestrator must not force hour granularity for a day-based intent, even when the resolved interval happens to contain 24 hours.
 

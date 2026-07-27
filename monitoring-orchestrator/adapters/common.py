@@ -73,10 +73,18 @@ def resolve_time_range(value: str | dict[str, str] | None, now: datetime | None 
             end = today
             start = end - timedelta(days=1)
             label = "yesterday"
+        elif preset == "previous_week":
+            this_week = today - timedelta(days=today.weekday())
+            start = this_week - timedelta(days=7)
+            end = this_week
+            label = "previous_week"
         else:
             match = re.fullmatch(r"last_(\d+)([dh])", preset)
             if not match or int(match.group(1)) < 1:
-                raise ValueError("time_range must be today, yesterday, last_<N>d, last_<N>h, or a {start, end} mapping")
+                raise ValueError(
+                    "time_range must be today, yesterday, previous_week, "
+                    "last_<N>d, last_<N>h, or a {start, end} mapping"
+                )
             amount, unit = int(match.group(1)), match.group(2)
             if unit == "h":
                 end = current

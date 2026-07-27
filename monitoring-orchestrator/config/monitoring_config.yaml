@@ -4,7 +4,7 @@ defaults:
   timeout_seconds: 60
   timezone: UTC
   # Shared range for Datadog, Stability SDK, and Sentry. Accepted presets:
-  # today, yesterday, last_<N>d, or last_<N>h. A manual run may instead use {start, end} in ISO-8601.
+  # today, yesterday, previous_week, last_<N>d, or last_<N>h. A manual run may instead use {start, end} in ISO-8601.
   time_range: last_24h
 
 # Shared platform configuration. Project-level blocks override these values.

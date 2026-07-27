@@ -50,6 +50,29 @@ class TimeGranularityContractTest(unittest.TestCase):
         self.assertEqual(yesterday["start"], datetime(2026, 7, 23, 0, 0, tzinfo=timezone.utc))
         self.assertEqual(yesterday["end"], datetime(2026, 7, 24, 0, 0, tzinfo=timezone.utc))
 
+    def test_previous_week_uses_the_complete_previous_utc_calendar_week(self) -> None:
+        now = datetime(2026, 7, 27, 1, 53, 42, tzinfo=timezone.utc)
+        previous_week = resolve_time_range("previous_week", now=now)
+
+        self.assertEqual(previous_week["label"], "previous_week")
+        self.assertEqual(previous_week["start"], datetime(2026, 7, 20, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(previous_week["end"], datetime(2026, 7, 27, 0, 0, tzinfo=timezone.utc))
+
+    def test_last_seven_days_remains_distinct_from_previous_week(self) -> None:
+        now = datetime(2026, 7, 27, 1, 53, 42, tzinfo=timezone.utc)
+        last_seven_days = resolve_time_range("last_7d", now=now)
+
+        self.assertEqual(last_seven_days["label"], "last_7d")
+        self.assertEqual(last_seven_days["start"], datetime(2026, 7, 21, 0, 0, tzinfo=timezone.utc))
+        self.assertEqual(last_seven_days["end"], now)
+
+    def test_orchestrator_distinguishes_previous_week_from_last_seven_days(self) -> None:
+        skill = (REPO_ROOT / "monitoring-orchestrator/SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("`上周`, `上一周`, `上个星期`, or `previous week` → `previous_week`", skill)
+        self.assertIn("`过去一周`, `最近一周`, `近一周`, `过去 7 天`, or `last 7 days` → `last_7d`", skill)
+        self.assertIn("Never map a previous-calendar-week phrase to `last_7d`", skill)
+
 
 if __name__ == "__main__":
     unittest.main()

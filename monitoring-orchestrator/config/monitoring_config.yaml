@@ -74,4 +74,5 @@ projects:
       enabled: false
       project: "product-editor-frontend"
     tracking_patrol:
-      enabled: false
+      enabled: true
+      workflow: "team-supplier-analytics-tracking-schedule.yml"

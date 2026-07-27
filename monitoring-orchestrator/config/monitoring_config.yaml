@@ -71,7 +71,7 @@ projects:
       enabled: true
       service: "visable-dev/product-editor-frontend"
     sentry:
-      enabled: false
+      enabled: true
       project: "product-editor-frontend"
     tracking_patrol:
       enabled: true

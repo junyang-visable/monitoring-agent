@@ -67,3 +67,22 @@ The monitoring report references evidence files; the reader uses evidence JSONs 
 ## Length target
 
 The full `report.md` for a single project should be **60–100 lines**. Multi-project reports add ~40 lines per additional project. Reports exceeding 150 lines for a single project violate these rules.
+
+## HTML report (`report.html`)
+
+After writing `report.md` and `report.json`, always generate the standalone HTML report by calling:
+
+```python
+from report_html import generate_html_report
+
+html = generate_html_report(run_dir)
+(run_dir / "report.html").write_text(html, encoding="utf-8")
+```
+
+Or from the command line:
+
+```bash
+python3 monitoring-orchestrator/report_html.py artifacts/monitoring/<run_id>
+```
+
+The HTML report mirrors the structure of `report.md` but adds visual enhancements: SVG line charts (hourly error distribution), SVG bar charts (error category comparison), styled P0 issue tables, and color-coded stat cards. It is self-contained with no external dependencies.

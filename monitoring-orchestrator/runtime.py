@@ -9,6 +9,7 @@ from adapters.config import deep_merge, resolve_project_signal_config
 from adapters.datadog import fetch_datadog, fetch_datadog_json
 from adapters.github import fetch_tracking_patrol
 from adapters.sentry import fetch_sentry
+from report_html import generate_html_report
 
 __all__ = [
     "error_result",
@@ -18,6 +19,7 @@ __all__ = [
     "fetch_json",
     "fetch_sentry",
     "fetch_tracking_patrol",
+    "generate_html_report",
     "iso_now",
     "redact",
     "resolve_project_signal_config",
